@@ -112,14 +112,24 @@ interpret(jnz(JumpIP),OldNextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,Upda
 
 interpret(inc(reg(Register)),NextIP,_,Stack,Registers,Flag,Stack,UpdatedRegisters,Flag,NextIP) :- interpret_update_reg(reg(Register),plusOne,Registers,UpdatedRegisters).
 interpret(dec(reg(Register)),NextIP,_,Stack,Registers,Flag,Stack,UpdatedRegisters,Flag,NextIP) :- interpret_update_reg(reg(Register),minusOne,Registers,UpdatedRegisters).
+interpret(mul(reg(LHSRegister),reg(RHSRegister)),NextIP,_,Stack,Registers,Flag,Stack,UpdatedRegisters,Flag,NextIP) :- 
+                get2(LHSRegister,Registers,LHSValue),
+                get2(RHSRegister,Registers,RHSValue),
+                Product is LHSValue*RHSValue,
+                update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
+
 
 interpret(term(String),NextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,NextIP) :- writeln(String).
 interpret(label(String),NextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,NextIP) :- writeln('ENTER: ' + String ).
 
-interpret(push(V),NextIP,_,Stack,Registers,Flag,UpdatedStack,Registers,Flag,NextIP) :- push_(V,Stack,UpdatedStack).
+interpret(push(reg(Register)),NextIP,_,Stack,Registers,Flag,UpdatedStack,Registers,Flag,NextIP) :- 
+                    get2(Register,Registers,RegisterValue),
+                    push_(RegisterValue,Stack,UpdatedStack).
+
 interpret(pop(reg(Register)),NextIP,_,Stack,Registers,Flag,UpdatedStack,UpdatedRegisters,Flag,NextIP) :- 
                                                                 pop_(Stack,PoppedValue,UpdatedStack),
                                                                 update_reg(-(reg(Register),PoppedValue),Registers,UpdatedRegisters).
+interpret(push(V),NextIP,_,Stack,Registers,Flag,UpdatedStack,Registers,Flag,NextIP) :- push_(V,Stack,UpdatedStack).
 
 interpret(call(label(LabelName)),NextIP,LabelMap,Stack,Registers,Flag,UpdatedStack,Registers,Flag,CallIP) :- 
                                                             get2(label(LabelName),LabelMap,CallIP),

@@ -24,6 +24,7 @@ vm([
     mvc(reg(r1), 1),               % r1 := 1
     call(label(foo)),             % call foo
     mvc(reg(r4), 4),              % r4 := 4 (after all returns)
+    mul(reg(r4),reg(r5)),
     hlt,
 
     label(foo),
@@ -37,5 +38,27 @@ vm([
     mvc(reg(r3), 3),              % r3 := 3
     term("In bar"),
     ret                           % return to foo
+],
+FinalTrace, FinalStack, FinalRegs, Flag).
+
+
+vm([
+    mvc(reg(r0),5),
+    mvc(reg(r1),1),
+    call(label(factorial)),
+    hlt,
+    label(factorial),
+    cmp(reg(r0),0),
+    jz(reg(base)),
+    push(reg(r0)),
+    dec(reg(r0)),
+    call(label(factorial)),
+    pop(reg(r0)),
+    mul(reg(r1),reg(r0)),
+    ret,
+
+    label(base),
+    mvc(reg(r1),1),
+    ret
 ],
 FinalTrace, FinalStack, FinalRegs, Flag).
