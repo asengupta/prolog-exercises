@@ -18,7 +18,7 @@ vm([
         term("SHOULD NOT COME HERE------------------------------"),
         ret
         ],
-FinalTrace, FinalStack, FinalRegs, Flag).
+FinalTrace, FinalStack, FinalCallStack, FinalRegs, Flag).
 
 vm([
     mvc(reg(r1), 1),               % r1 := 1
@@ -39,7 +39,7 @@ vm([
     term("In bar"),
     ret                           % return to foo
 ],
-FinalTrace, FinalStack, FinalRegs, Flag).
+FinalTrace, FinalStack, FinalCallStack, FinalRegs, Flag).
 
 
 vm([
@@ -49,7 +49,7 @@ vm([
     hlt,
     label(factorial),
     cmp(reg(r0),0),
-    jz(reg(base)),
+    jz(label(base)),
     push(reg(r0)),
     dec(reg(r0)),
     call(label(factorial)),
@@ -61,4 +61,4 @@ vm([
     mvc(reg(r1),1),
     ret
 ],
-FinalTrace, FinalStack, FinalRegs, Flag).
+FinalTrace, FinalStack, FinalCallStack, FinalRegs, Flag).
