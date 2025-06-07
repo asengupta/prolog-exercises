@@ -3,8 +3,7 @@
 
 test(vm_factorial_of_5_is_120) :-
         factorial_program(Program),
-       vm(Program,
-       _,_,_,FinalRegs,_),
+       vm(Program,_,_,_,FinalRegs,_),
        get2(r1,FinalRegs,R1),
        assertion(R1==120).
 
@@ -114,12 +113,6 @@ test(call_stack_behavior) :-
         ret
     ], _, _, CallStack, _, _),
     assertion(CallStack == []).
-
-test(vm_factorial_5) :-
-    factorial_program(Program),
-    vm(Program, _, _, _, FinalRegs, _),
-    get2(r1, FinalRegs, R1),
-    assertion(R1 == 120).
 
 % Helper to define the factorial program
 factorial_program([
