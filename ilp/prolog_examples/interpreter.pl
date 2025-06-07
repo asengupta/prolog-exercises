@@ -139,7 +139,6 @@ interpret(ret,_,_,Stack,CallStack,Registers,Flag,Stack,UpdatedCallStack,Register
                                                             pop_(CallStack,PoppedValue,UpdatedCallStack),
                                                             writeln('Returning from call...IP is ' + PoppedValue).
 interpret(nop,NextIP,_,Stack,CallStack,Registers,Flag,Stack,CallStack,Registers,Flag,NextIP).
-interpret(nop,NextIP,_,Stack,CallStack,Registers,Flag,Stack,CallStack,Registers,Flag,NextIP) :- writeln('HALTING PROGRAM!!!!!!').
 
 interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :- 
                                                             get2(Register,Registers,RegisterValue),
