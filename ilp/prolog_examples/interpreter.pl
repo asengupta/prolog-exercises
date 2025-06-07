@@ -21,18 +21,18 @@ merge2(Map1,[],Map1).
 merge2([],Map2,Map2).
 merge2([-(K,V)|T],Map2,R) :- put2(-(K,V),Map2,RX),merge2(T,RX,R).
 
-update_reg(-(reg(ToRegister),reg(FromRegister)),Registers,UpdatedRegisters) :- get2(FromRegister,Registers,Value),
-                                                                               update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
-update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters) :- put2(-(ToRegister,Value),Registers,UpdatedRegisters).
+push_(V,Stack,UpdatedStack) :- UpdatedStack=[V|Stack].
 
-push(V,Stack,UpdatedStack) :- UpdatedStack=[V|Stack].
-
-pop([],empty,[]).
-pop([H|Rest],H,Rest).
+pop_([],empty,[]).
+pop_([H|Rest],H,Rest).
 
 equate(LHS,LHS,0).
 equate(LHS,RHS,1) :- LHS < RHS.
 equate(LHS,RHS,-1) :- LHS > RHS.
+
+update_reg(-(reg(ToRegister),reg(FromRegister)),Registers,UpdatedRegisters) :- get2(FromRegister,Registers,Value),
+                                                                               update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
+update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters) :- put2(-(ToRegister,Value),Registers,UpdatedRegisters).
 
 instruction_pointer_map([],IPMap,_,IPMap).
 instruction_pointer_map([Instr|T],IPMap,IPCounter,FinalIPMap) :- put2(-(IPCounter,Instr),IPMap,UpdatedIPMap),
@@ -51,6 +51,7 @@ exec_(IP,IPMap,LabelMap,Stack,Registers,Flag,TraceAcc,FinalTrace,FinalStack,Fina
                                                     exec_helper(IP,IPMap,LabelMap,Stack,Instr,Registers,Flag,TraceAcc,FinalTrace,FinalStack,FinalRegisters,FinalFlag).
 
 exec_helper(_,_,_,Stack,empty,Registers,Flag,TraceAcc,TraceAcc,Stack,Registers,Flag).
+exec_helper(_,_,_,Stack,hlt,Registers,Flag,TraceAcc,TraceAcc,Stack,Registers,Flag) :- writeln('Halting program!!!!').
 exec_helper(IP,IPMap,LabelMap,Stack,Instr,Registers,Flag,TraceAcc,FinalTrace,FinalStack,FinalRegisters,FinalFlag) :-
                                                         writeln('Interpreting ' + Instr),
                                                         NextIP is IP+1,
@@ -113,12 +114,22 @@ interpret(inc(reg(Register)),NextIP,_,Stack,Registers,Flag,Stack,UpdatedRegister
 interpret(dec(reg(Register)),NextIP,_,Stack,Registers,Flag,Stack,UpdatedRegisters,Flag,NextIP) :- interpret_update_reg(reg(Register),minusOne,Registers,UpdatedRegisters).
 
 interpret(term(String),NextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,NextIP) :- writeln(String).
-interpret(label(String),NextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,NextIP) :- writeln('ENTER: ' + String).
+interpret(label(String),NextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,NextIP) :- writeln('ENTER: ' + String ).
 
-interpret(push(V),NextIP,_,Stack,Registers,Flag,UpdatedStack,Registers,Flag,NextIP) :- push(V,Stack,UpdatedStack).
+interpret(push(V),NextIP,_,Stack,Registers,Flag,UpdatedStack,Registers,Flag,NextIP) :- push_(V,Stack,UpdatedStack).
 interpret(pop(reg(Register)),NextIP,_,Stack,Registers,Flag,UpdatedStack,UpdatedRegisters,Flag,NextIP) :- 
-                                                                pop(Stack,PoppedValue,UpdatedStack),
+                                                                pop_(Stack,PoppedValue,UpdatedStack),
                                                                 update_reg(-(reg(Register),PoppedValue),Registers,UpdatedRegisters).
+
+interpret(call(label(LabelName)),NextIP,LabelMap,Stack,Registers,Flag,UpdatedStack,Registers,Flag,CallIP) :- 
+                                                            get2(label(LabelName),LabelMap,CallIP),
+                                                            push_(NextIP,Stack,UpdatedStack),
+                                                            writeln('CALL: ' + LabelName + 'Stack is ' + UpdatedStack).
+interpret(ret,_,_,Stack,Registers,Flag,UpdatedStack,Registers,Flag,PoppedValue) :- 
+                                                            pop_(Stack,PoppedValue,UpdatedStack),
+                                                            writeln('Returning from call...IP is ' + PoppedValue).
+interpret(nop,NextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,NextIP).
+interpret(nop,NextIP,_,Stack,Registers,Flag,Stack,Registers,Flag,NextIP) :- writeln('HALTING PROGRAM!!!!!!').
 
 interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :- 
                                                             get2(Register,Registers,RegisterValue),
@@ -130,4 +141,3 @@ vm(Program,FinalTrace,FinalStack,FinalRegisters,FinalFlag) :- instruction_pointe
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
                                                       exec_(0,IPMap,LabelMap,[],[],0,[],FinalTrace,FinalStack,FinalRegisters,FinalFlag).
-

@@ -5,7 +5,37 @@ vm([
         dec(reg(f)), 
         cmp(reg(f),0), 
         jnz(label("LOOP")), 
-        j(label("SOME_LABEL")),term("-------------------------Done"),
-        label("SOME_LABEL")
+        j(label("SOME_LABEL")),
+        term("-------------------------Done"),
+        label("SOME_LABEL"),
+        push(42),
+        pop(reg(lol)),
+        call(label("MYSUB")),
+        term("Returned from MYSUB"),
+        push(22),
+        hlt,
+        label("MYSUB"),
+        term("SHOULD NOT COME HERE------------------------------"),
+        ret
         ],
-Trace, FinalRegs, Flag).
+FinalTrace, FinalStack, FinalRegs, Flag).
+
+vm([
+    mvc(reg(r1), 1),               % r1 := 1
+    call(label(foo)),             % call foo
+    mvc(reg(r4), 4),              % r4 := 4 (after all returns)
+    hlt,
+
+    label(foo),
+    mvc(reg(r2), 2),              % r2 := 2
+    call(label(bar)),             % nested call
+    mvc(reg(r5), 5),              % r5 := 5 (after returning from bar)
+    term("In foo"),
+    ret,                          % return to main
+
+    label(bar),
+    mvc(reg(r3), 3),              % r3 := 3
+    term("In bar"),
+    ret                           % return to foo
+],
+FinalTrace, FinalStack, FinalRegs, Flag).
