@@ -1,0 +1,11 @@
+vm([
+        mvc(reg(f), 5), 
+        label("LOOP"), 
+        term("Looping"), 
+        dec(reg(f)), 
+        cmp(reg(f),0), 
+        jnz(label("LOOP")), 
+        j(label("SOME_LABEL")),term("-------------------------Done"),
+        label("SOME_LABEL")
+        ],
+Trace, FinalRegs, Flag).
