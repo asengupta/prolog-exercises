@@ -1,6 +1,32 @@
 :- use_module('interpreter').
 :- begin_tests(vm).
 
+test(symbolic) :-
+    Program = [
+      mvc(reg(1), const(5)),
+      mvc(reg(2), reg(1)),
+      hlt
+    ],
+    vm(Program,_,_,_,_,FinalRegs,_),
+    get2(1,FinalRegs,R1),
+    get2(2,FinalRegs,R2),
+    assertion(R1==const(5)),
+    assertion(R2==const(5)).
+
+test(incremental_symbolic_state) :-
+    Program = [
+      mvc(reg(1), const(2)),
+      inc(reg(1)),
+      inc(reg(1)),
+      mvc(reg(2), reg(1)),
+      hlt
+    ],
+    vm(Program,_,_,_,_,FinalRegs,_),
+    get2(1,FinalRegs,R1),
+    get2(2,FinalRegs,R2),
+    assertion(R1==const(4)),
+    assertion(R2==const(4)).
+
 test(vm_factorial_of_5_is_120) :-
         factorial_program(Program),
        vm(Program,_,_,_,_,FinalRegs,_),
