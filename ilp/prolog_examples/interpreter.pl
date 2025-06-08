@@ -26,9 +26,9 @@ push_(V,Stack,UpdatedStack) :- UpdatedStack=[V|Stack].
 pop_([],empty,[]).
 pop_([H|Rest],H,Rest).
 
-equate(LHS,LHS,0).
-equate(const(LHS),const(RHS),1) :- LHS < RHS.
-equate(const(LHS),const(RHS),-1) :- LHS > RHS.
+equate(LHS,LHS,const(0)).
+equate(const(LHS),const(RHS),const(1)) :- LHS < RHS.
+equate(const(LHS),const(RHS),const(-1)) :- LHS > RHS.
 
 update_reg(-(reg(ToRegister),reg(FromRegister)),Registers,UpdatedRegisters) :- get2(FromRegister,Registers,Value),
                                                                                update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
@@ -63,17 +63,12 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
                                                         exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
                                                         FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace],!.
 
-isZero(0).
+isZero(const(0)).
 isNotZero(X) :- \+ isZero(X).
 
-plusOne(const(X),const(PlusOne)) :- PlusOne is X+1,!.
-%plusOne(X,PlusOne) :- PlusOne is X+1.
-
-minusOne(const(X),const(MinusOne)) :- MinusOne is X-1,!.
-%minusOne(X,MinusOne) :- MinusOne is X-1.
-
-product(const(LHS),const(RHS),const(Product)) :- Product is LHS*RHS,!.
-%product(LHS,RHS,Product) :- Product is LHS*RHS.
+plusOne(const(X),const(PlusOne)) :- PlusOne is X+1.
+minusOne(const(X),const(MinusOne)) :- MinusOne is X-1.
+product(const(LHS),const(RHS),const(Product)) :- Product is LHS*RHS.
 
 interpret_condition(_,NewIP,flags(zero(ZeroFlagValue)),Condition,NewIP) :- call(Condition,ZeroFlagValue).
 interpret_condition(OldIP,_,flags(zero(ZeroFlagValue)),Condition,OldIP) :- \+ call(Condition,ZeroFlagValue).
