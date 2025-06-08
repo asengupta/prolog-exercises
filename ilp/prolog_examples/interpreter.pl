@@ -27,8 +27,8 @@ pop_([],empty,[]).
 pop_([H|Rest],H,Rest).
 
 equate(LHS,LHS,0).
-equate(LHS,RHS,1) :- LHS < RHS.
-equate(LHS,RHS,-1) :- LHS > RHS.
+equate(const(LHS),const(RHS),1) :- LHS < RHS.
+equate(const(LHS),const(RHS),-1) :- LHS > RHS.
 
 update_reg(-(reg(ToRegister),reg(FromRegister)),Registers,UpdatedRegisters) :- get2(FromRegister,Registers,Value),
                                                                                update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
@@ -36,14 +36,14 @@ update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters) :- put2(-(ToRegi
 
 instruction_pointer_map([],IPMap,_,IPMap).
 instruction_pointer_map([Instr|T],IPMap,IPCounter,FinalIPMap) :- put2(-(IPCounter,Instr),IPMap,UpdatedIPMap),
-                                                                 UpdatedIPCounter is IPCounter+1,
+                                                                 plusOne(IPCounter,UpdatedIPCounter),
                                                                  instruction_pointer_map(T,UpdatedIPMap,UpdatedIPCounter,FinalIPMap).
 label_map([],LabelMap,_,LabelMap).
 label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Label),IPCounter),LabelMap,UpdatedLabelMap),
-                                                                 UpdatedIPCounter is IPCounter+1,
+                                                                 plusOne(IPCounter,UpdatedIPCounter),
                                                                  label_map(T,UpdatedLabelMap,UpdatedIPCounter,FinalLabelMap),
                                                                  !.
-label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCounter+1,
+label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- plusOne(IPCounter,UpdatedIPCounter),
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
 toTraceOut(Trace,vmState(IP,Stack,CallStack,Registers,VmFlags),traceOut(Trace,IP,Stack,CallStack,Registers,VmFlags)). 
@@ -57,7 +57,7 @@ exec_helper(empty,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,Tr
 exec_helper(hlt,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut),writeln('Halting program!!!!').
 exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)) :-
                                                         writeln('Interpreting ' + Instr + 'StateIn is ' + vmState(IP,Stack,CallStack,Registers,VmFlags)),
-                                                        NextIP is IP+1,
+                                                        plusOne(IP,NextIP),
                                                         interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags)),
                                                         write('Next IP is ' + UpdatedIP),
                                                         exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
@@ -65,19 +65,35 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
 
 isZero(0).
 isNotZero(X) :- \+ isZero(X).
-plusOne(X,PlusOne) :- PlusOne is X+1.
-minusOne(X,MinusOne) :- MinusOne is X-1.
+
+plusOne(const(X),const(PlusOne)) :- PlusOne is X+1,!.
+%plusOne(X,PlusOne) :- PlusOne is X+1.
+
+minusOne(const(X),const(MinusOne)) :- MinusOne is X-1,!.
+%minusOne(X,MinusOne) :- MinusOne is X-1.
+
+product(const(LHS),const(RHS),const(Product)) :- Product is LHS*RHS,!.
+%product(LHS,RHS,Product) :- Product is LHS*RHS.
 
 interpret_condition(_,NewIP,flags(zero(ZeroFlagValue)),Condition,NewIP) :- call(Condition,ZeroFlagValue).
 interpret_condition(OldIP,_,flags(zero(ZeroFlagValue)),Condition,OldIP) :- \+ call(Condition,ZeroFlagValue).
 
-interpret(mvc(reg(ToRegister),Value),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- 
-                                                        writeln('In mvc' + ToRegister + Registers),
-                                                        update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
-interpret(cmp(reg(CmpRegister),CmpValue),_,vmState(NextIP,Stack,CallStack,Registers,_),vmState(NextIP,Stack,CallStack,Registers,flags(zero(UpdatedVmFlags)))) :- 
+interpret(mvc(reg(ToRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- 
+                                                        writeln('In mvc const' + ToRegister + Registers),
+                                                        update_reg(-(reg(ToRegister),const(ConstValue)),Registers,UpdatedRegisters).
+interpret(mvc(reg(ToRegister),reg(FromRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- 
+                                                        writeln('In mvc reg' + ToRegister + Registers),
+                                                        get2(FromRegister,Registers,RegisterValue),
+                                                        update_reg(-(reg(ToRegister),RegisterValue),Registers,UpdatedRegisters).
+interpret(cmp(reg(CmpRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,_),vmState(NextIP,Stack,CallStack,Registers,flags(zero(UpdatedVmFlags)))) :- 
                                                         writeln('In cmp' + CmpRegister + Registers),
                                                         get2(CmpRegister,Registers,RegisterValue),
-                                                        equate(RegisterValue,CmpValue,UpdatedVmFlags).
+                                                        equate(RegisterValue,const(ConstValue),UpdatedVmFlags).
+interpret(cmp(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,_),vmState(NextIP,Stack,CallStack,Registers,flags(zero(UpdatedVmFlags)))) :- 
+                                                        writeln('In cmp' + LHSRegister + RHSRegister + Registers),
+                                                        get2(LHSRegister,Registers,LHSRegisterValue),
+                                                        get2(RHSRegister,Registers,RHSRegisterValue),
+                                                        equate(LHSRegisterValue,RHSRegisterValue,UpdatedVmFlags).
 
 interpret(j(label(Label)),vmMaps(_,LabelMap),vmState(_,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags)) :- 
                                                         writeln('In jmp direct label' + Label + Registers),
@@ -118,7 +134,7 @@ interpret(dec(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags)
 interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- 
                 get2(LHSRegister,Registers,LHSValue),
                 get2(RHSRegister,Registers,RHSValue),
-                Product is LHSValue*RHSValue,
+                product(LHSValue,RHSValue,Product),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
 interpret(term(String),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,Registers,VmFlags)) :- writeln(String).
@@ -148,8 +164,8 @@ interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :-
                                                             update_reg(-(reg(Register),Result),Registers,UpdatedRegisters).
 
 vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags) :- 
-                                                      instruction_pointer_map(Program,[],0,IPMap),
-                                                      label_map(Program,[],0,LabelMap),
+                                                      instruction_pointer_map(Program,[],const(0),IPMap),
+                                                      label_map(Program,[],const(0),LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      exec_(vmMaps(IPMap,LabelMap),vmState(0,[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)).
+                                                      exec_(vmMaps(IPMap,LabelMap),vmState(const(0),[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)).
