@@ -46,18 +46,18 @@ label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Lab
 label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCounter+1,
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
-exec_(IP,[IPMap,LabelMap],StateIn,TraceAcc,StateOut) :- 
+exec_(IP,reference(IPMap,LabelMap),StateIn,TraceAcc,StateOut) :- 
                                                     get2(IP,IPMap,Instr),
-                                                    exec_helper(IP,Instr,[IPMap,LabelMap],StateIn,TraceAcc,StateOut).
+                                                    exec_helper(IP,Instr,reference(IPMap,LabelMap),StateIn,TraceAcc,StateOut).
 
 exec_helper(_,empty,_,StateIn,TraceAcc,[TraceAcc|StateIn]).
 exec_helper(_,hlt,_,StateIn,TraceAcc,[TraceAcc|StateIn]) :- writeln('Halting program!!!!').
-exec_helper(IP,Instr,[IPMap,LabelMap],StateIn,TraceAcc,[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]) :-
+exec_helper(IP,Instr,reference(IPMap,LabelMap),StateIn,TraceAcc,[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]) :-
                                                         writeln('Interpreting ' + Instr),
                                                         NextIP is IP+1,
                                                         interpret(Instr,NextIP,[LabelMap],StateIn,[UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag]),
                                                         write('Next IP is ' + UpdatedIP),
-                                                        exec_(UpdatedIP,[IPMap,LabelMap],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag],TraceAcc,[RemainingTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]),
+                                                        exec_(UpdatedIP,reference(IPMap,LabelMap),[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag],TraceAcc,[RemainingTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]),
                                                         FinalTrace=[Instr|RemainingTrace],!.
 
 isZero(0).
@@ -149,4 +149,4 @@ vm(Program,FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag) :- ins
                                                       label_map(Program,[],0,LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      exec_(0,[IPMap,LabelMap],[[],[],[],0],[],[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]).
+                                                      exec_(0,reference(IPMap,LabelMap),[[],[],[],0],[],[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]).
