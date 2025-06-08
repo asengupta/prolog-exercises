@@ -61,7 +61,7 @@ exec_helper(Instr,reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers
                                                         interpret(Instr,[LabelMap],vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag)),
                                                         write('Next IP is ' + UpdatedIP),
                                                         exec_(reference(IPMap,LabelMap),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)),
-                                                        FinalTrace=[Instr|RemainingTrace],!.
+                                                        FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag))|RemainingTrace],!.
 
 isZero(0).
 isNotZero(X) :- \+ isZero(X).
