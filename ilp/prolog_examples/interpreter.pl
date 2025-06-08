@@ -71,7 +71,7 @@ interpret_condition(OldIP,_,Flag,Condition,OldIP) :- \+ call(Condition,Flag).
 interpret(mvc(reg(ToRegister),Value),NextIP,_,[Stack,CallStack,Registers,Flag],[Stack,CallStack,UpdatedRegisters,Flag,NextIP]) :- 
                                                         writeln('In mvc' + ToRegister + Registers),
                                                         update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
-interpret(cmp(reg(CmpRegister),CmpValue),NextIP,[_],[Stack,CallStack,Registers,_],[Stack,CallStack,Registers,UpdatedFlag,NextIP]) :- 
+interpret(cmp(reg(CmpRegister),CmpValue),NextIP,_,[Stack,CallStack,Registers,_],[Stack,CallStack,Registers,UpdatedFlag,NextIP]) :- 
                                                         writeln('In cmp' + CmpRegister + Registers),
                                                         get2(CmpRegister,Registers,RegisterValue),
                                                         equate(RegisterValue,CmpValue,UpdatedFlag).
@@ -80,27 +80,27 @@ interpret(j(label(Label)),_,[LabelMap],[Stack,CallStack,Registers,Flag],[Stack,C
                                                         writeln('In jmp direct label' + Label + Registers),
                                                         get2(label(Label),LabelMap,UpdatedIP).
 
-interpret(j(reg(JumpRegister)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,UpdatedIP]) :- 
+interpret(j(reg(JumpRegister)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut) :- 
                                                         writeln('In jmp indirect' + JumpRegister + Registers),
                                                         get2(JumpRegister,Registers,RegisterValue),
-                                                        interpret(j(RegisterValue),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,UpdatedIP]).
+                                                        interpret(j(RegisterValue),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut).
 
 interpret(j(JumpIP),_,[_],[Stack,CallStack,Registers,Flag],[Stack,CallStack,Registers,Flag,JumpIP]) :- writeln('In jmp direct' + JumpIP + Registers).
 
-interpret(jz(reg(JumpRegister)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,NewIP]) :- 
+interpret(jz(reg(JumpRegister)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut) :- 
                                                         writeln('In JZ indirect reg' + JumpRegister + Registers),
                                                         get2(JumpRegister,Registers,RegisterValue),
-                                                        interpret(jz(RegisterValue),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,NewIP]).
+                                                        interpret(jz(RegisterValue),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut).
 
-interpret(jnz(reg(JumpRegister)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,NewIP]) :- 
+interpret(jnz(reg(JumpRegister)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut) :- 
                                                         writeln('In JNZ indirect reg' + JumpRegister + Registers),
                                                         get2(JumpRegister,Registers,RegisterValue),
-                                                        interpret(jnz(RegisterValue),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,NewIP]).
+                                                        interpret(jnz(RegisterValue),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut).
 
-interpret(jz(label(Label)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,NewIP]) :- 
+interpret(jz(label(Label)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut) :- 
                                                         writeln('In JZ label' + Label + Registers),
                                                         get2(label(Label),LabelMap,JumpIP),
-                                                        interpret(jz(JumpIP),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,NewIP]).
+                                                        interpret(jz(JumpIP),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],StateOut).
 
 interpret(jnz(label(Label)),NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,NewIP]) :- 
                                                         writeln('In JNZ label' + Label + Registers),
