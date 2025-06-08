@@ -46,16 +46,16 @@ label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Lab
 label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCounter+1,
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
-exec_(IP,[IPMap,LabelMap],[Stack,CallStack,Registers,Flag],TraceAcc,[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]) :- 
+exec_(IP,[IPMap,LabelMap],StateIn,TraceAcc,StateOut) :- 
                                                     get2(IP,IPMap,Instr),
-                                                    exec_helper(IP,Instr,[IPMap,LabelMap],[Stack,CallStack,Registers,Flag],TraceAcc,[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]).
+                                                    exec_helper(IP,Instr,[IPMap,LabelMap],StateIn,TraceAcc,StateOut).
 
-exec_helper(_,empty,[_,_],[Stack,CallStack,Registers,Flag],TraceAcc,[TraceAcc,Stack,CallStack,Registers,Flag]).
-exec_helper(_,hlt,[_,_],[Stack,CallStack,Registers,Flag],TraceAcc,[TraceAcc,Stack,CallStack,Registers,Flag]) :- writeln('Halting program!!!!').
-exec_helper(IP,Instr,[IPMap,LabelMap],[Stack,CallStack,Registers,Flag],TraceAcc,[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]) :-
+exec_helper(_,empty,_,StateIn,TraceAcc,[TraceAcc|StateIn]).
+exec_helper(_,hlt,_,StateIn,TraceAcc,[TraceAcc|StateIn]) :- writeln('Halting program!!!!').
+exec_helper(IP,Instr,[IPMap,LabelMap],StateIn,TraceAcc,[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]) :-
                                                         writeln('Interpreting ' + Instr),
                                                         NextIP is IP+1,
-                                                        interpret(Instr,NextIP,[LabelMap],[Stack,CallStack,Registers,Flag],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,UpdatedIP]),
+                                                        interpret(Instr,NextIP,[LabelMap],StateIn,[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag,UpdatedIP]),
                                                         write('Next IP is ' + UpdatedIP),
                                                         exec_(UpdatedIP,[IPMap,LabelMap],[UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag],TraceAcc,[RemainingTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]),
                                                         FinalTrace=[Instr|RemainingTrace],!.
@@ -68,7 +68,7 @@ minusOne(X,MinusOne) :- MinusOne is X-1.
 interpret_condition(_,NewIP,Flag,Condition,NewIP) :- call(Condition,Flag).
 interpret_condition(OldIP,_,Flag,Condition,OldIP) :- \+ call(Condition,Flag).
 
-interpret(mvc(reg(ToRegister),Value),NextIP,[_],[Stack,CallStack,Registers,Flag],[Stack,CallStack,UpdatedRegisters,Flag,NextIP]) :- 
+interpret(mvc(reg(ToRegister),Value),NextIP,_,[Stack,CallStack,Registers,Flag],[Stack,CallStack,UpdatedRegisters,Flag,NextIP]) :- 
                                                         writeln('In mvc' + ToRegister + Registers),
                                                         update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
 interpret(cmp(reg(CmpRegister),CmpValue),NextIP,[_],[Stack,CallStack,Registers,_],[Stack,CallStack,Registers,UpdatedFlag,NextIP]) :- 
