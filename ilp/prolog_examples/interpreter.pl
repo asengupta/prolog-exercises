@@ -68,13 +68,13 @@ isNotZero(X) :- \+ isZero(X).
 plusOne(X,PlusOne) :- PlusOne is X+1.
 minusOne(X,MinusOne) :- MinusOne is X-1.
 
-interpret_condition(_,NewIP,Flag,Condition,NewIP) :- call(Condition,Flag).
-interpret_condition(OldIP,_,Flag,Condition,OldIP) :- \+ call(Condition,Flag).
+interpret_condition(_,NewIP,flags(zero(ZeroFlagValue)),Condition,NewIP) :- call(Condition,ZeroFlagValue).
+interpret_condition(OldIP,_,flags(zero(ZeroFlagValue)),Condition,OldIP) :- \+ call(Condition,ZeroFlagValue).
 
 interpret(mvc(reg(ToRegister),Value),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,Stack,CallStack,UpdatedRegisters,Flag)) :- 
                                                         writeln('In mvc' + ToRegister + Registers),
                                                         update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
-interpret(cmp(reg(CmpRegister),CmpValue),_,vmState(NextIP,Stack,CallStack,Registers,_),vmState(NextIP,Stack,CallStack,Registers,UpdatedFlag)) :- 
+interpret(cmp(reg(CmpRegister),CmpValue),_,vmState(NextIP,Stack,CallStack,Registers,_),vmState(NextIP,Stack,CallStack,Registers,flags(zero(UpdatedFlag)))) :- 
                                                         writeln('In cmp' + CmpRegister + Registers),
                                                         get2(CmpRegister,Registers,RegisterValue),
                                                         equate(RegisterValue,CmpValue,UpdatedFlag).
@@ -152,4 +152,4 @@ vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag
                                                       label_map(Program,[],0,LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      exec_(vmMaps(IPMap,LabelMap),vmState(0,[],[],[],0),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)).
+                                                      exec_(vmMaps(IPMap,LabelMap),vmState(0,[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)).
