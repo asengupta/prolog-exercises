@@ -47,19 +47,20 @@ label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCount
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
 toStateOut(X,stateIn(Stack,CallStack,Registers,Flag),[X,Stack,CallStack,Registers,Flag]).
+toTraceOut(X,stateIn(Stack,CallStack,Registers,Flag),traceOut(X,Stack,CallStack,Registers,Flag)).
 
 exec_(IP,reference(IPMap,LabelMap),StateIn,TraceAcc,StateOut) :- 
                                                     get2(IP,IPMap,Instr),
                                                     exec_helper(IP,Instr,reference(IPMap,LabelMap),StateIn,TraceAcc,StateOut).
 
-exec_helper(_,empty,_,StateIn,TraceAcc,StateOut) :- toStateOut(TraceAcc,StateIn,StateOut).
-exec_helper(_,hlt,_,StateIn,TraceAcc,StateOut) :- toStateOut(TraceAcc,StateIn,StateOut),writeln('Halting program!!!!').
-exec_helper(IP,Instr,reference(IPMap,LabelMap),StateIn,TraceAcc,[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]) :-
+exec_helper(_,empty,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut).
+exec_helper(_,hlt,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut),writeln('Halting program!!!!').
+exec_helper(IP,Instr,reference(IPMap,LabelMap),StateIn,TraceAcc,traceOut(FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)) :-
                                                         writeln('Interpreting ' + Instr + 'StateIn is ' + StateIn),
                                                         NextIP is IP+1,
                                                         interpret(Instr,NextIP,[LabelMap],StateIn,[UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag]),
                                                         write('Next IP is ' + UpdatedIP),
-                                                        exec_(UpdatedIP,reference(IPMap,LabelMap),stateIn(UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag),TraceAcc,[RemainingTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]),
+                                                        exec_(UpdatedIP,reference(IPMap,LabelMap),stateIn(UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag),TraceAcc,traceOut(RemainingTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)),
                                                         FinalTrace=[Instr|RemainingTrace],!.
 
 isZero(0).
@@ -121,8 +122,8 @@ interpret(mul(reg(LHSRegister),reg(RHSRegister)),NextIP,_,stateIn(Stack,CallStac
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
 
-interpret(term(String),NextIP,_,StateIn,StateOut) :- toStateOut(NextIP,StateIn,StateOut),writeln(String). %TODO: refactor
-interpret(label(String),NextIP,_,StateIn,StateOut) :- writeln('MATCH?????'),toStateOut(NextIP,StateIn,StateOut),writeln('ENTER: ' + String ). %TODO: refactor
+interpret(term(String),NextIP,_,StateIn,StateOut) :- toStateOut(NextIP,StateIn,StateOut),writeln(String).
+interpret(label(String),NextIP,_,StateIn,StateOut) :- toStateOut(NextIP,StateIn,StateOut),writeln('ENTER: ' + String ).
 
 interpret(push(reg(Register)),NextIP,_,stateIn(Stack,CallStack,Registers,Flag),[NextIP,UpdatedStack,CallStack,Registers,Flag]) :- 
                     get2(Register,Registers,RegisterValue),
@@ -151,4 +152,4 @@ vm(Program,FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag) :- ins
                                                       label_map(Program,[],0,LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      exec_(0,reference(IPMap,LabelMap),stateIn([],[],[],0),[],[FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag]).
+                                                      exec_(0,reference(IPMap,LabelMap),stateIn([],[],[],0),[],traceOut(FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)).
