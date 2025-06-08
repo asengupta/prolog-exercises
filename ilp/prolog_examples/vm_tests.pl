@@ -3,7 +3,7 @@
 
 test(vm_factorial_of_5_is_120) :-
         factorial_program(Program),
-       vm(Program,_,_,_,FinalRegs,_),
+       vm(Program,_,_,_,_,FinalRegs,_),
        get2(r1,FinalRegs,R1),
        assertion(R1==120).
 
@@ -11,7 +11,7 @@ test(simple_move) :-
     vm([
         mvc(reg(r1), 42),
         hlt
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r1, Regs, R1),
     assertion(R1 == 42).
 
@@ -21,7 +21,7 @@ test(addition_simulation) :-
         inc(reg(r1)),
         inc(reg(r1)),
         hlt
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r1, Regs, R1),
     assertion(R1 == 42).
 
@@ -31,7 +31,7 @@ test(multiplication) :-
         mvc(reg(r2), 7),
         mul(reg(r1), reg(r2)),  % r1 = r1 * r2
         hlt
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r1, Regs, R1),
     assertion(R1 == 42).
 
@@ -42,7 +42,7 @@ test(stack_push_pop) :-
         mvc(reg(r1), 0),
         pop(reg(r2)),
         hlt
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r2, Regs, R2),
     assertion(R2 == 99).
 
@@ -53,7 +53,7 @@ test(jump_direct) :-
         label(skip),
         mvc(reg(r1), 42),
         hlt
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r1, Regs, R1),
     assertion(R1 == 42).
 
@@ -66,7 +66,7 @@ test(jz_branch_taken) :-
         label(zero_case),
         mvc(reg(r2), 42),
         hlt
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r2, Regs, R2),
     assertion(R2 == 42).
 
@@ -79,7 +79,7 @@ test(jnz_branch_taken) :-
         label(non_zero_case),
         mvc(reg(r2), 42),
         hlt
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r2, Regs, R2),
     assertion(R2 == 42).
 
@@ -97,7 +97,7 @@ test(nested_call_ret) :-
         label(second),
         mvc(reg(r2), 20),
         ret
-    ], _, _, _, Regs, _),
+    ], _, _, _, _, Regs, _),
     get2(r1, Regs, R1),
     get2(r2, Regs, R2),
     assertion(R1 == 10),
@@ -111,7 +111,7 @@ test(call_stack_behavior) :-
 
         label(f),
         ret
-    ], _, _, CallStack, _, _),
+    ], _, _, _, CallStack, _, _),
     assertion(CallStack == []).
 
 % Helper to define the factorial program

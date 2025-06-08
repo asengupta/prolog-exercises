@@ -46,7 +46,9 @@ label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Lab
 label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCounter+1,
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
-toTraceOut(X,vmState(_,Stack,CallStack,Registers,Flag),traceOut(X,Stack,CallStack,Registers,Flag)).
+toTraceOut(X,vmState(IP,Stack,CallStack,Registers,Flag),Result) :- 
+                                    writeln("Final IP is " + IP),
+                                    Result=traceOut(X,IP,Stack,CallStack,Registers,Flag).
 
 exec_(reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,StateOut) :- 
                                                     get2(IP,IPMap,Instr),
@@ -54,13 +56,13 @@ exec_(reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),Trace
 
 exec_helper(empty,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut).
 exec_helper(hlt,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut),writeln('Halting program!!!!').
-exec_helper(Instr,reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,traceOut(FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)) :-
+exec_helper(Instr,reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)) :-
                                                         writeln('Interpreting ' + Instr + 'StateIn is ' + vmState(IP,Stack,CallStack,Registers,Flag)),
                                                         NextIP is IP+1,
                                                         writeln(interpret(Instr,NextIP,[LabelMap],vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag))),
                                                         interpret(Instr,NextIP,[LabelMap],vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag)),
                                                         write('Next IP is ' + UpdatedIP),
-                                                        exec_(reference(IPMap,LabelMap),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag),TraceAcc,traceOut(RemainingTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)),
+                                                        exec_(reference(IPMap,LabelMap),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)),
                                                         FinalTrace=[Instr|RemainingTrace],!.
 
 isZero(0).
@@ -148,8 +150,10 @@ interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :-
                                                             call(Calculation,RegisterValue,Result),
                                                             update_reg(-(reg(Register),Result),Registers,UpdatedRegisters).
 
-vm(Program,FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag) :- instruction_pointer_map(Program,[],0,IPMap),
+vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag) :- 
+                                                      instruction_pointer_map(Program,[],0,IPMap),
                                                       label_map(Program,[],0,LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      exec_(reference(IPMap,LabelMap),vmState(0,[],[],[],0),[],traceOut(FinalTrace,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)).
+                                                      writeln('Invocation is:'),
+                                                      exec_(reference(IPMap,LabelMap),vmState(0,[],[],[],0),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)).
