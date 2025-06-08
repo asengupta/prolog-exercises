@@ -18,7 +18,7 @@ vm([
         term("SHOULD NOT COME HERE------------------------------"),
         ret
         ],
-FinalTrace, FinalStack, FinalCallStack, FinalRegs, Flag).
+FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
 
 vm([
     mvc(reg(r1), 1),               % r1 := 1
@@ -39,13 +39,13 @@ vm([
     term("In bar"),
     ret                           % return to foo
 ],
-FinalTrace, FinalStack, FinalCallStack, FinalRegs, Flag).
+FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
 
 
 vm([
     mvc(reg(r0),5),
     mvc(reg(r1),1),
-    call(label(factorial)),
+    call(label(factorial)),push(30),cmp(reg(r1),121),
     hlt,
     label(factorial),
     cmp(reg(r0),0),
@@ -61,4 +61,22 @@ vm([
     mvc(reg(r1),1),
     ret
 ],
-FinalTrace, FinalStack, FinalCallStack, FinalRegs, Flag).
+FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
+
+vm([
+    label(main),
+    call(label(func1)),
+    hlt,
+
+    label(func1),
+    term('In func1'),
+    call(label(func2)),
+    push(1),       % pushed after returning from func2
+    ret,
+
+    label(func2),
+    term('In func2'),
+    push(2),
+    ret
+],
+FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).

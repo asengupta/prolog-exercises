@@ -46,18 +46,18 @@ label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Lab
 label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCounter+1,
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
-toTraceOut(X,vmState(IP,Stack,CallStack,Registers,Flag),traceOut(X,IP,Stack,CallStack,Registers,Flag)). 
+toTraceOut(Trace,vmState(IP,Stack,CallStack,Registers,Flag),traceOut(Trace,IP,Stack,CallStack,Registers,Flag)). 
 
 exec_(reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,StateOut) :- 
                                                     get2(IP,IPMap,Instr),
-                                                    exec_helper(Instr,reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,StateOut).
+                                                    exec_helper(Instr,reference(IPMap,LabelMap),
+                                                        vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,StateOut).
 
 exec_helper(empty,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut).
 exec_helper(hlt,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut),writeln('Halting program!!!!').
 exec_helper(Instr,reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)) :-
                                                         writeln('Interpreting ' + Instr + 'StateIn is ' + vmState(IP,Stack,CallStack,Registers,Flag)),
                                                         NextIP is IP+1,
-                                                        writeln(interpret(Instr,NextIP,[LabelMap],vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag))),
                                                         interpret(Instr,[LabelMap],vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag)),
                                                         write('Next IP is ' + UpdatedIP),
                                                         exec_(reference(IPMap,LabelMap),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)),
