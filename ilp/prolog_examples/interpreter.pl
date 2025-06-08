@@ -46,22 +46,22 @@ label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Lab
 label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCounter+1,
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
-toTraceOut(Trace,vmState(IP,Stack,CallStack,Registers,Flag),traceOut(Trace,IP,Stack,CallStack,Registers,Flag)). 
+toTraceOut(Trace,vmState(IP,Stack,CallStack,Registers,VmFlags),traceOut(Trace,IP,Stack,CallStack,Registers,VmFlags)). 
 
-exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,StateOut) :- 
+exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut) :- 
                                                     get2(IP,IPMap,Instr),
                                                     exec_helper(Instr,vmMaps(IPMap,LabelMap),
-                                                        vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,StateOut).
+                                                        vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut).
 
 exec_helper(empty,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut).
 exec_helper(hlt,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut),writeln('Halting program!!!!').
-exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)) :-
-                                                        writeln('Interpreting ' + Instr + 'StateIn is ' + vmState(IP,Stack,CallStack,Registers,Flag)),
+exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)) :-
+                                                        writeln('Interpreting ' + Instr + 'StateIn is ' + vmState(IP,Stack,CallStack,Registers,VmFlags)),
                                                         NextIP is IP+1,
-                                                        interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag)),
+                                                        interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags)),
                                                         write('Next IP is ' + UpdatedIP),
-                                                        exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)),
-                                                        FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedFlag))|RemainingTrace],!.
+                                                        exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
+                                                        FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace],!.
 
 isZero(0).
 isNotZero(X) :- \+ isZero(X).
@@ -71,73 +71,73 @@ minusOne(X,MinusOne) :- MinusOne is X-1.
 interpret_condition(_,NewIP,flags(zero(ZeroFlagValue)),Condition,NewIP) :- call(Condition,ZeroFlagValue).
 interpret_condition(OldIP,_,flags(zero(ZeroFlagValue)),Condition,OldIP) :- \+ call(Condition,ZeroFlagValue).
 
-interpret(mvc(reg(ToRegister),Value),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,Stack,CallStack,UpdatedRegisters,Flag)) :- 
+interpret(mvc(reg(ToRegister),Value),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- 
                                                         writeln('In mvc' + ToRegister + Registers),
                                                         update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters).
-interpret(cmp(reg(CmpRegister),CmpValue),_,vmState(NextIP,Stack,CallStack,Registers,_),vmState(NextIP,Stack,CallStack,Registers,flags(zero(UpdatedFlag)))) :- 
+interpret(cmp(reg(CmpRegister),CmpValue),_,vmState(NextIP,Stack,CallStack,Registers,_),vmState(NextIP,Stack,CallStack,Registers,flags(zero(UpdatedVmFlags)))) :- 
                                                         writeln('In cmp' + CmpRegister + Registers),
                                                         get2(CmpRegister,Registers,RegisterValue),
-                                                        equate(RegisterValue,CmpValue,UpdatedFlag).
+                                                        equate(RegisterValue,CmpValue,UpdatedVmFlags).
 
-interpret(j(label(Label)),vmMaps(_,LabelMap),vmState(_,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,Stack,CallStack,Registers,Flag)) :- 
+interpret(j(label(Label)),vmMaps(_,LabelMap),vmState(_,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags)) :- 
                                                         writeln('In jmp direct label' + Label + Registers),
                                                         get2(label(Label),LabelMap,UpdatedIP).
 
-interpret(j(reg(JumpRegister)),VmMaps,vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut) :- 
+interpret(j(reg(JumpRegister)),VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut) :- 
                                                         writeln('In jmp indirect' + JumpRegister + Registers),
                                                         get2(JumpRegister,Registers,RegisterValue),
-                                                        interpret(j(RegisterValue),VmMaps,vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut).
+                                                        interpret(j(RegisterValue),VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut).
 
-interpret(j(JumpIP),_,vmState(_,Stack,CallStack,Registers,Flag),vmState(JumpIP,Stack,CallStack,Registers,Flag)) :- writeln('In jmp direct' + JumpIP + Registers).
+interpret(j(JumpIP),_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(JumpIP,Stack,CallStack,Registers,VmFlags)) :- writeln('In jmp direct' + JumpIP + Registers).
 
-interpret(jz(reg(JumpRegister)),VmMaps,vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut) :- 
+interpret(jz(reg(JumpRegister)),VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut) :- 
                                                         writeln('In JZ indirect reg' + JumpRegister + Registers),
                                                         get2(JumpRegister,Registers,RegisterValue),
-                                                        interpret(jz(RegisterValue),VmMaps,vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut).
+                                                        interpret(jz(RegisterValue),VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut).
 
-interpret(jnz(reg(JumpRegister)),VmMaps,vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut) :- 
+interpret(jnz(reg(JumpRegister)),VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut) :- 
                                                         writeln('In JNZ indirect reg' + JumpRegister + Registers),
                                                         get2(JumpRegister,Registers,RegisterValue),
-                                                        interpret(jnz(RegisterValue),VmMaps,vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut).
+                                                        interpret(jnz(RegisterValue),VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut).
 
-interpret(jz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut) :- 
+interpret(jz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut) :- 
                                                         writeln('In JZ label' + Label + Registers),
                                                         get2(label(Label),LabelMap,JumpIP),
-                                                        interpret(jz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut).
+                                                        interpret(jz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut).
 
-interpret(jnz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut) :- 
+interpret(jnz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut) :- 
                                                         writeln('In JNZ label' + Label + Registers),
                                                         get2(label(Label),LabelMap,JumpIP),
-                                                        interpret(jnz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,Flag),StateOut).
+                                                        interpret(jnz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut).
 
-interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,Stack,CallStack,Registers,Flag)) :- interpret_condition(OldNextIP,JumpIP,Flag,isZero,UpdatedIP).
-interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,Flag),vmState(UpdatedIP,Stack,CallStack,Registers,Flag)) :- interpret_condition(OldNextIP,JumpIP,Flag,isNotZero,UpdatedIP).
+interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags)) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedIP).
+interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags)) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedIP).
 
-interpret(inc(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,Stack,CallStack,UpdatedRegisters,Flag)) :- interpret_update_reg(reg(Register),plusOne,Registers,UpdatedRegisters).
-interpret(dec(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,Stack,CallStack,UpdatedRegisters,Flag)) :- interpret_update_reg(reg(Register),minusOne,Registers,UpdatedRegisters).
-interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,Stack,CallStack,UpdatedRegisters,Flag)) :- 
+interpret(inc(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- interpret_update_reg(reg(Register),plusOne,Registers,UpdatedRegisters).
+interpret(dec(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- interpret_update_reg(reg(Register),minusOne,Registers,UpdatedRegisters).
+interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags)) :- 
                 get2(LHSRegister,Registers,LHSValue),
                 get2(RHSRegister,Registers,RHSValue),
                 Product is LHSValue*RHSValue,
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
-interpret(term(String),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,Stack,CallStack,Registers,Flag)) :- writeln(String).
-interpret(label(String),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,Stack,CallStack,Registers,Flag)) :- writeln('ENTER: ' + String ).
+interpret(term(String),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,Registers,VmFlags)) :- writeln(String).
+interpret(label(String),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,Registers,VmFlags)) :- writeln('ENTER: ' + String ).
 
-interpret(push(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,UpdatedStack,CallStack,Registers,Flag)) :- 
+interpret(push(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,UpdatedStack,CallStack,Registers,VmFlags)) :- 
                     get2(Register,Registers,RegisterValue),
                     push_(RegisterValue,Stack,UpdatedStack).
 
-interpret(pop(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,UpdatedStack,CallStack,UpdatedRegisters,Flag)) :- 
+interpret(pop(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,UpdatedStack,CallStack,UpdatedRegisters,VmFlags)) :- 
                                                                 pop_(Stack,PoppedValue,UpdatedStack),
                                                                 update_reg(-(reg(Register),PoppedValue),Registers,UpdatedRegisters).
-interpret(push(V),_,vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(NextIP,UpdatedStack,CallStack,Registers,Flag)) :- push_(V,Stack,UpdatedStack).
+interpret(push(V),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,UpdatedStack,CallStack,Registers,VmFlags)) :- push_(V,Stack,UpdatedStack).
 
-interpret(call(label(LabelName)),vmMaps(_,LabelMap),vmState(NextIP,Stack,CallStack,Registers,Flag),vmState(CallIP,Stack,UpdatedCallStack,Registers,Flag)) :- 
+interpret(call(label(LabelName)),vmMaps(_,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(CallIP,Stack,UpdatedCallStack,Registers,VmFlags)) :- 
                                                             get2(label(LabelName),LabelMap,CallIP),
                                                             push_(NextIP,CallStack,UpdatedCallStack),
                                                             writeln('CALL: ' + LabelName + 'Stack is ' + UpdatedCallStack).
-interpret(ret,_,vmState(_,Stack,CallStack,Registers,Flag),vmState(PoppedValue,Stack,UpdatedCallStack,Registers,Flag)) :- 
+interpret(ret,_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(PoppedValue,Stack,UpdatedCallStack,Registers,VmFlags)) :- 
                                                             pop_(CallStack,PoppedValue,UpdatedCallStack),
                                                             writeln('Returning from call...IP is ' + PoppedValue).
 interpret(nop,_,VmState,VmState).
@@ -147,9 +147,9 @@ interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :-
                                                             call(Calculation,RegisterValue,Result),
                                                             update_reg(-(reg(Register),Result),Registers,UpdatedRegisters).
 
-vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag) :- 
+vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags) :- 
                                                       instruction_pointer_map(Program,[],0,IPMap),
                                                       label_map(Program,[],0,LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      exec_(vmMaps(IPMap,LabelMap),vmState(0,[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)).
+                                                      exec_(vmMaps(IPMap,LabelMap),vmState(0,[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)).
