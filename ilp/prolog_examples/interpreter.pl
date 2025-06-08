@@ -46,9 +46,7 @@ label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Lab
 label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- UpdatedIPCounter is IPCounter+1,
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
-toTraceOut(X,vmState(IP,Stack,CallStack,Registers,Flag),Result) :- 
-                                    writeln("Final IP is " + IP),
-                                    Result=traceOut(X,IP,Stack,CallStack,Registers,Flag).
+toTraceOut(X,vmState(IP,Stack,CallStack,Registers,Flag),traceOut(X,IP,Stack,CallStack,Registers,Flag)). 
 
 exec_(reference(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,Flag),TraceAcc,StateOut) :- 
                                                     get2(IP,IPMap,Instr),
@@ -155,5 +153,4 @@ vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag
                                                       label_map(Program,[],0,LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      writeln('Invocation is:'),
                                                       exec_(reference(IPMap,LabelMap),vmState(0,[],[],[],0),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalFlag)).
