@@ -176,8 +176,8 @@ dont_log(_,_).
 vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags) :- 
                                                       instruction_pointer_map(Program,[],const(0),IPMap),
                                                       label_map(Program,[],const(0),LabelMap),
-                                                      writeln('IP MAP IS ' + IPMap),
-                                                      writeln('LABEL MAP IS ' + LabelMap),
+                                                      info('IP MAP IS ~w',[IPMap]),
+                                                      info('LABEL MAP IS ~w',[LabelMap]),
                                                       exec_(vmMaps(IPMap,LabelMap),vmState(const(0),[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(dont_log,info,warning,error))).
 
 log_with_level(LogLevel,FormatString,Args) :- format(string(Message),FormatString,Args),format('[~w]: ~w~n',[LogLevel,Message]).
