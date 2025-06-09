@@ -8,3 +8,9 @@ maplist_twice_(_,[],Acc,Acc) :- !.
 maplist_twice_(Pred,[H|T],Acc,[Applied|ResultX]) :- apply_twice(Pred,H,Applied),maplist_twice_(Pred,T,Acc,ResultX).
 
 append_dl(A-X,B-Y,A-Y) :- X=B.
+
+parent(a,b).
+parent(b,c).
+parent(b,d).
+
+grandparent(X,Y) :- parent(X,Z),parent(Z,Y).

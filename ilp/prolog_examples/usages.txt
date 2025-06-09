@@ -1,18 +1,18 @@
 vm([
-        mvc(reg(f), 5), 
+        mvc(reg(f), const(5)), 
         label("LOOP"), 
         term("Looping"), 
         dec(reg(f)), 
-        cmp(reg(f),0), 
+        cmp(reg(f),const(0)), 
         jnz(label("LOOP")), 
         j(label("SOME_LABEL")),
         term("-------------------------Done"),
         label("SOME_LABEL"),
-        push(42),
+        push(const(42)),
         pop(reg(lol)),
         call(label("MYSUB")),
         term("Returned from MYSUB"),
-        push(22),
+        push(const(22)),
         hlt,
         label("MYSUB"),
         term("SHOULD NOT COME HERE------------------------------"),
@@ -21,21 +21,21 @@ vm([
 FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
 
 vm([
-    mvc(reg(r1), 1),               % r1 := 1
+    mvc(reg(r1), const(1)),               % r1 := 1
     call(label(foo)),             % call foo
-    mvc(reg(r4), 4),              % r4 := 4 (after all returns)
+    mvc(reg(r4), const(4)),              % r4 := 4 (after all returns)
     mul(reg(r4),reg(r5)),
     hlt,
 
     label(foo),
-    mvc(reg(r2), 2),              % r2 := 2
+    mvc(reg(r2), const(2)),              % r2 := 2
     call(label(bar)),             % nested call
-    mvc(reg(r5), 5),              % r5 := 5 (after returning from bar)
+    mvc(reg(r5), const(5)),              % r5 := 5 (after returning from bar)
     term("In foo"),
     ret,                          % return to main
 
     label(bar),
-    mvc(reg(r3), 3),              % r3 := 3
+    mvc(reg(r3), const(3)),              % r3 := 3
     term("In bar"),
     ret                           % return to foo
 ],
@@ -43,23 +43,25 @@ FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
 
 
 vm([
-    mvc(reg(r0),5),
-    mvc(reg(r1),1),
-    call(label(factorial)),push(30),cmp(reg(r1),121),
-    hlt,
-    label(factorial),
-    cmp(reg(r0),0),
-    jz(label(base)),
-    push(reg(r0)),
-    dec(reg(r0)),
-    call(label(factorial)),
-    pop(reg(r0)),
-    mul(reg(r1),reg(r0)),
-    ret,
+     mvc(reg(r0),const(5)),
+     mvc(reg(r1),const(1)),
+     call(label(factorial)),
+     push(const(30)),
+     cmp(reg(r1),const(121)),
+     hlt,
+     label(factorial),
+     cmp(reg(r0),const(0)),
+     jz(label(base)),
+     push(reg(r0)),
+     dec(reg(r0)),
+     call(label(factorial)),
+     pop(reg(r0)),
+     mul(reg(r1),reg(r0)),
+     ret,
 
-    label(base),
-    mvc(reg(r1),1),
-    ret
+     label(base),
+     mvc(reg(r1),const(1)),
+     ret
 ],
 FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
 

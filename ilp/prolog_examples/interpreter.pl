@@ -48,19 +48,19 @@ label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- plusOne(IPCounter,UpdatedIP
 
 toTraceOut(Trace,vmState(IP,Stack,CallStack,Registers,VmFlags),traceOut(Trace,IP,Stack,CallStack,Registers,VmFlags)). 
 
-exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut) :- 
+exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut,Env) :- 
                                                     get2(IP,IPMap,Instr),
                                                     exec_helper(Instr,vmMaps(IPMap,LabelMap),
-                                                        vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut).
+                                                        vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut,Env).
 
-exec_helper(empty,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut).
-exec_helper(hlt,_,StateIn,TraceAcc,TraceOut) :- toTraceOut(TraceAcc,StateIn,TraceOut),writeln('Halting program!!!!').
-exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)) :-
-                                                        writeln('Interpreting ' + Instr + 'StateIn is ' + vmState(IP,Stack,CallStack,Registers,VmFlags)),
+exec_helper(empty,_,StateIn,TraceAcc,TraceOut,_) :- toTraceOut(TraceAcc,StateIn,TraceOut).
+exec_helper(hlt,_,StateIn,TraceAcc,TraceOut,env(log(_,Info,_,_))) :- toTraceOut(TraceAcc,StateIn,TraceOut),call(Info,'Halting program HAHAHAHA!!!!').
+exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(Debug,Info,Warning,Error))) :-
+                                                        call(Debug,'Interpreting ~w and StateIn is ~w~n', [Instr, vmState(IP,Stack,CallStack,Registers,VmFlags)]),
                                                         plusOne(IP,NextIP),
                                                         interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags)),
                                                         write('Next IP is ' + UpdatedIP),
-                                                        exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
+                                                        exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(Debug,Info,Warning,Error))),
                                                         FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace],!.
 
 isZero(const(0)).
@@ -158,9 +158,24 @@ interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :-
                                                             call(Calculation,RegisterValue,Result),
                                                             update_reg(-(reg(Register),Result),Registers,UpdatedRegisters).
 
+debug(Message) :- format(Message,[]).
+debug(FormatString,Args) :- format(FormatString,Args).
+
+info(Message) :- format(Message,[]).
+info(FormatString,Args) :- format(FormatString,Args).
+
+warning(Message) :- format(Message,[]).
+warning(FormatString,Args) :- format(FormatString,Args).
+
+error(Message) :- format(Message,[]).
+error(FormatString,Args) :- format(FormatString,Args).
+
+dont_log(_).
+dont_log(_,_).
+
 vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags) :- 
                                                       instruction_pointer_map(Program,[],const(0),IPMap),
                                                       label_map(Program,[],const(0),LabelMap),
                                                       writeln('IP MAP IS ' + IPMap),
                                                       writeln('LABEL MAP IS ' + LabelMap),
-                                                      exec_(vmMaps(IPMap,LabelMap),vmState(const(0),[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)).
+                                                      exec_(vmMaps(IPMap,LabelMap),vmState(const(0),[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(dont_log,info,warning,error))).
