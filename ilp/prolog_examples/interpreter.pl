@@ -59,7 +59,7 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
                                                         call(Debug,'Interpreting ~w and StateIn is ~w', [Instr, vmState(IP,Stack,CallStack,Registers,VmFlags)]),
                                                         plusOne(IP,NextIP),
                                                         interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),env(log(Debug,Info,Warning,Error))),
-                                                        write('Next IP is ' + UpdatedIP),
+                                                        call(Debug,'Next IP is ~w',[UpdatedIP]),
                                                         exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(Debug,Info,Warning,Error))),
                                                         FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace],!.
 
@@ -144,13 +144,13 @@ interpret(pop(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags)
                                                                 update_reg(-(reg(Register),PoppedValue),Registers,UpdatedRegisters).
 interpret(push(V),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,UpdatedStack,CallStack,Registers,VmFlags),_) :- push_(V,Stack,UpdatedStack).
 
-interpret(call(label(LabelName)),vmMaps(_,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(CallIP,Stack,UpdatedCallStack,Registers,VmFlags),_) :- 
+interpret(call(label(LabelName)),vmMaps(_,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(CallIP,Stack,UpdatedCallStack,Registers,VmFlags),env(log(_,Info,_,_))) :- 
                                                             get2(label(LabelName),LabelMap,CallIP),
                                                             push_(NextIP,CallStack,UpdatedCallStack),
-                                                            writeln('CALL: ' + LabelName + 'Stack is ' + UpdatedCallStack).
-interpret(ret,_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(PoppedValue,Stack,UpdatedCallStack,Registers,VmFlags),_) :- 
+                                                            call(Info,'CALL: ~w and Stack is ~w', [LabelName,UpdatedCallStack]).
+interpret(ret,_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(PoppedValue,Stack,UpdatedCallStack,Registers,VmFlags),env(log(Debug,_,_,_))) :- 
                                                             pop_(CallStack,PoppedValue,UpdatedCallStack),
-                                                            writeln('Returning from call...IP is ' + PoppedValue).
+                                                            call(Debug,'Returning from call...IP is ~w',[PoppedValue]).
 interpret(nop,_,VmState,VmState,_).
 
 interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :- 
@@ -158,19 +158,19 @@ interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :-
                                                             call(Calculation,RegisterValue,Result),
                                                             update_reg(-(reg(Register),Result),Registers,UpdatedRegisters).
 
-log_with_level(LogLevel,Message) :- format('[~w]: ~w~n',[LogLevel,Message]).
+log_with_level(LogLevel,FormatString,Args) :- format(string(Message),FormatString,Args),format('[~w]: ~w~n',[LogLevel,Message]).
 
-debug(Message) :- log_with_level('DEBUG',Message).
-debug(FormatString,Args) :- format(string(CoreMessage),FormatString,Args),log_with_level('DEBUG',CoreMessage).
+debug(Message) :- log_with_level('DEBUG',Message,[]).
+debug(FormatString,Args) :- log_with_level('DEBUG',FormatString,Args).
 
-info(Message) :- log_with_level('INFO',Message).
-info(FormatString,Args) :- format(string(CoreMessage),FormatString,Args),log_with_level('INFO',CoreMessage).
+info(Message) :- log_with_level('INFO',Message,[]).
+info(FormatString,Args) :- log_with_level('INFO',FormatString,Args).
 
-warning(Message) :- log_with_level('WARN',Message).
-warning(FormatString,Args) :- format(string(CoreMessage),FormatString,Args),log_with_level('WARN',CoreMessage).
+warning(Message) :- log_with_level('WARN',Message,[]).
+warning(FormatString,Args) :- log_with_level('WARN',FormatString,Args).
 
-error(Message) :- log_with_level('ERROR',Message).
-error(FormatString,Args) :- format(string(CoreMessage),FormatString,Args),log_with_level('ERROR',CoreMessage).
+error(Message) :- log_with_level('ERROR',Message,[]).
+error(FormatString,Args) :- log_with_level('ERROR',FormatString,Args).
 
 dont_log(_).
 dont_log(_,_).
