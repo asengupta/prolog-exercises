@@ -38,8 +38,7 @@ update_reg(-(reg(ToRegister),reg(FromRegister)),Registers,UpdatedRegisters) :- g
 update_reg(-(reg(ToRegister),Value),Registers,UpdatedRegisters) :- put2(-(ToRegister,Value),Registers,UpdatedRegisters).
 
 instruction_pointer_map([],IPMap,_,IPMap).
-instruction_pointer_map([Instr|T],IPMap,IPCounter,FinalIPMap) :- writeln('Testing'),
-                                                                 put2(-(IPCounter,Instr),IPMap,UpdatedIPMap),
+instruction_pointer_map([Instr|T],IPMap,IPCounter,FinalIPMap) :- put2(-(IPCounter,Instr),IPMap,UpdatedIPMap),
                                                                  plusOne(IPCounter,UpdatedIPCounter),
                                                                  instruction_pointer_map(T,UpdatedIPMap,UpdatedIPCounter,FinalIPMap).
 label_map([],LabelMap,_,LabelMap).
