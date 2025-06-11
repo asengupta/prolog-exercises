@@ -49,7 +49,7 @@ label_map([label(Label)|T],LabelMap,IPCounter,FinalLabelMap) :- put2(-(label(Lab
 label_map([_|T],LabelMap,IPCounter,FinalLabelMap) :- plusOne(IPCounter,UpdatedIPCounter),
                                                      label_map(T,LabelMap,UpdatedIPCounter,FinalLabelMap).
 
-toTraceOut(Trace,vmState(IP,Stack,CallStack,Registers,VmFlags),traceOut(Trace,IP,Stack,CallStack,Registers,VmFlags)). 
+toTraceOut(Trace,VmState,traceOut(Trace,VmState)).
 
 exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut,Env) :- 
                                                     get2(IP,IPMap,Instr),
@@ -58,12 +58,12 @@ exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),Trace
 
 exec_helper(empty,_,StateIn,TraceAcc,TraceOut,_) :- toTraceOut(TraceAcc,StateIn,TraceOut).
 exec_helper(hlt,_,StateIn,TraceAcc,TraceOut,env(log(_,Info,_,_))) :- toTraceOut(TraceAcc,StateIn,TraceOut),call(Info,'HALTING PROGRAM!!!!').
-exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(Debug,Info,Warning,Error))) :-
+exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error))) :-
                                                         call(Debug,'Interpreting ~w and StateIn is ~w', [Instr, vmState(IP,Stack,CallStack,Registers,VmFlags)]),
                                                         plusOne(IP,NextIP),
                                                         interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),env(log(Debug,Info,Warning,Error))),
                                                         call(Debug,'Next IP is ~w',[UpdatedIP]),
-                                                        exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(Debug,Info,Warning,Error))),
+                                                        exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error))),
                                                         FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace],!.
 
 isZero(const(0)).
@@ -197,7 +197,11 @@ vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFl
                                                       label_map(Program,[],const(0),LabelMap),
                                                       info('IP MAP IS ~w',[IPMap]),
                                                       info('LABEL MAP IS ~w',[LabelMap]),
-                                                      exec_(vmMaps(IPMap,LabelMap),vmState(const(0),[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(debug,info,warning,error))).
+                                                      StateIn=vmState(const(0),[],[],[],flags(zero(0))),
+                                                      exec_(vmMaps(IPMap,LabelMap),
+                                                          StateIn,[],
+                                                          traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
+                                                          env(log(debug,info,warning,error))).
 
 eval(const(ConstValue),_,const(ConstValue)).
 eval(sym(inc(Symbol)),Bindings,inc(Evaluated)) :- eval(Symbol,Bindings,Evaluated),Evaluated\=empty.
