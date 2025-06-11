@@ -108,7 +108,7 @@ interpret(j(label(Label)),vmMaps(_,LabelMap),vmState(_,Stack,CallStack,Registers
                                                         call(Debug,'In jmp direct label: ~w and Registers are: ~w',[Label,Registers]),
                                                         get2(label(Label),LabelMap,UpdatedIP).
 
-interpret(j(JumpIP),_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(JumpIP,Stack,CallStack,Registers,VmFlags),env(log(Debug,_,_,_))) :- writeln('In jmp direct' + JumpIP + Registers).
+interpret(j(JumpIP),_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(JumpIP,Stack,CallStack,Registers,VmFlags),env(log(Debug,_,_,_))) :- call(Debug,'In jmp direct',[JumpIP,Registers]).
 
 interpret(jz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error))) :- 
                                                         call(Debug,'In JZ label: ~w and Registers are: ~w',[Label,Registers]),
@@ -144,7 +144,15 @@ interpret(mul(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallSta
                 call(Debug,"And result is ~w",[Product]),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
-interpret(term(String),_,VmState,VmState,env(log(_,Info,_,_))) :- call(Debug,String).
+interpret(mul(reg(LHSRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
+                get2(LHSRegister,Registers,LHSValue),
+                call(Debug,'LHS is ~w',[LHSRegister]),
+                call(Debug,'RHS is ~w',[sym(Symbol)]),
+                product(LHSValue,sym(Symbol),Product),
+                call(Debug,"And result is ~w",[Product]),
+                update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
+
+interpret(term(String),_,VmState,VmState,env(log(_,Info,_,_))) :- call(Info,String).
 interpret(label(String),_,VmState,VmState,env(log(_,Info,_,_))) :- call(Info,'ENTER: ~w',[String]).
 
 interpret(push(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,UpdatedStack,CallStack,Registers,VmFlags),_) :- 
@@ -190,5 +198,18 @@ vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFl
                                                       info('IP MAP IS ~w',[IPMap]),
                                                       info('LABEL MAP IS ~w',[LabelMap]),
                                                       exec_(vmMaps(IPMap,LabelMap),vmState(const(0),[],[],[],flags(zero(0))),[],traceOut(FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),env(log(debug,info,warning,error))).
+
+eval(const(ConstValue),_,const(ConstValue)).
+eval(sym(inc(Symbol)),Bindings,inc(Evaluated)) :- eval(Symbol,Bindings,Evaluated),Evaluated\=empty.
+eval(sym(dec(Symbol)),Bindings,dec(Evaluated)) :- eval(Symbol,Bindings,Evaluated),Evaluated\=empty.
+eval(sym(product(LHS,RHS)),Bindings,product(EvaluatedLHS, EvaluatedRHS)) :- eval(LHS,Bindings,EvaluatedLHS),
+                                                                   eval(RHS,Bindings,EvaluatedRHS),
+                                                                   EvaluatedLHS\=empty,
+                                                                   EvaluatedRHS\=empty.
+eval(sym(cmp(LHS,RHS)),Bindings,cmp(EvaluatedLHS, EvaluatedRHS)) :- eval(LHS,Bindings,EvaluatedLHS),
+                                                                    eval(RHS,Bindings,EvaluatedRHS),
+                                                                    EvaluatedLHS\=empty,
+                                                                    EvaluatedRHS\=empty.
+eval(sym(Other),Bindings,Binding) :- get2(sym(Other),Bindings,Binding),Binding\=empty.
 
 log_with_level(LogLevel,FormatString,Args) :- format(string(Message),FormatString,Args),format('[~w]: ~w~n',[LogLevel,Message]).
