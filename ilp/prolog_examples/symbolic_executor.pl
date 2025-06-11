@@ -108,14 +108,15 @@ interpret(cmp(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallSta
                                                         call(Debug,'In cmp(reg,const): ~w and Registers are: ~w',[LHSRegister,Registers]),
                                                         get2(LHSRegister,Registers,LHSValue),
                                                         equate(LHSValue,const(ConstValue),ComparisonResult),
-                                                        StateOut=vmState(NextIP,Stack,CallStack,Registers,UpdatedVmFlags),
-                                                        UpdatedVmFlags=flags(zero(ComparisonResult),HltFlag,BranchFlag).
-interpret(cmp(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,flags(_,HltFlag,BranchFlag)),vmState(NextIP,Stack,CallStack,Registers,UpdatedVmFlags),env(log(Debug,_,_,_))) :- 
+                                                        UpdatedVmFlags=flags(zero(ComparisonResult),HltFlag,BranchFlag),
+                                                        StateOut=vmState(NextIP,Stack,CallStack,Registers,UpdatedVmFlags).
+interpret(cmp(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,flags(_,HltFlag,BranchFlag)),StateOut,env(log(Debug,_,_,_))) :- 
                                                         call(Debug,'In cmp(reg,reg): ~w,~w and Registers are: ~w',[LHSRegister,RHSRegister,Registers]),
                                                         get2(LHSRegister,Registers,LHSValue),
                                                         get2(RHSRegister,Registers,RHSValue),
                                                         equate(LHSValue,RHSValue,ComparisonResult),
-                                                        UpdatedVmFlags=flags(zero(ComparisonResult),HltFlag,BranchFlag).
+                                                        UpdatedVmFlags=flags(zero(ComparisonResult),HltFlag,BranchFlag),
+                                                        StateOut=vmState(NextIP,Stack,CallStack,Registers,UpdatedVmFlags).
 
 interpret(j(label(Label)),vmMaps(_,LabelMap),vmState(_,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags),env(log(Debug,_,_,_))) :- 
                                                         call(Debug,'In jmp direct label: ~w and Registers are: ~w',[Label,Registers]),
