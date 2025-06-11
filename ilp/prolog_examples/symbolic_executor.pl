@@ -212,4 +212,15 @@ eval(sym(cmp(LHS,RHS)),Bindings,cmp(EvaluatedLHS, EvaluatedRHS)) :- eval(LHS,Bin
                                                                     EvaluatedRHS\=empty.
 eval(sym(Other),Bindings,Binding) :- get2(sym(Other),Bindings,Binding),Binding\=empty.
 
+compute(const(ConstValue),const(ConstValue)).
+compute(inc(Expr),const(Result)) :- compute(Expr,const(ConstValue)),Result is ConstValue+1.
+compute(dec(Expr),const(Result)) :- compute(Expr,const(ConstValue)),Result is ConstValue-1.
+compute(product(LHS,RHS),const(Result)) :- compute(LHS,const(ResolvedLHS)),
+                                           compute(RHS,const(ResolvedRHS)),
+                                           Result is ResolvedLHS*ResolvedRHS.
+compute(cmp(LHS,RHS),Result) :- compute(LHS,ResolvedLHS),
+                                compute(RHS,ResolvedRHS),
+                                equate(ResolvedLHS,ResolvedRHS,Result).
+
+
 log_with_level(LogLevel,FormatString,Args) :- format(string(Message),FormatString,Args),format('[~w]: ~w~n',[LogLevel,Message]).
