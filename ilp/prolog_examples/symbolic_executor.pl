@@ -243,9 +243,9 @@ vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(StateIn,TraceOut,ChildWorlds)) :
                                   StateIn,[],
                                   traceOut(FinalTrace,VmStateOut),
                                   env(log(debug,info,warning,error))),
-                              TraceOut=traceOut(FinalTrace,VmStateOut),
-                              VmStateOut=vmState(FinalIP,_,_,_,FinalVmFlags),
+                              VmStateOut=vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),
                               minusOne(FinalIP,LastInstrIP),
+                              TraceOut=traceOut(FinalTrace,vmState(LastInstrIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
                               (shouldTerminateWorld(FinalVmFlags)->(ChildWorlds=[]);
                                 (
                                   NewStartIP_One=FinalIP,
