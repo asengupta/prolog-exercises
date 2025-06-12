@@ -236,17 +236,15 @@ explore(Program,VmState,VmMaps,[IP|OtherIPs],WorldAcc,[WorldOut|OtherWorldOuts])
                                                     VmState=vmState(_,Stack,CallStack,Registers,flags(ZeroFlag,_,_)),
                                                     FreshState=vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(false),branch(false))),
                                                     vm(Program,FreshState,VmMaps,WorldOut),
-                                                    explore(Program,VmState,VmMaps,OtherIPs,WorldAcc,OtherWorldOuts).
+                                                    explore(Program,VmState,VmMaps,OtherIPs,WorldAcc,OtherWorldOuts),
+                                                    !.
 vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(TraceOut,ChildWorlds)) :- 
-%                              StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
                               exec_(vmMaps(IPMap,LabelMap),
                                   StateIn,[],
                                   traceOut(FinalTrace,VmStateOut),
                                   env(log(debug,info,warning,error))),
                               TraceOut=traceOut(FinalTrace,VmStateOut),
-                              info("LOLOLOL 1: ~w",[VmStateOut]),
                               VmStateOut=vmState(FinalIP,_,_,_,FinalVmFlags),
-                              info("LOLOLOL 2"),
                               (shouldTerminateWorld(FinalVmFlags)->(ChildWorlds=[]);
                                 (
                                   NewStartIP_One=FinalIP,
@@ -257,6 +255,21 @@ vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(TraceOut,ChildWorlds)) :-
                                   explore(Program,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds)
                                 )
                               ).
+
+print_worlds([],_).
+print_worlds([World|OtherWorlds],Level) :-
+                                          (Level==0->format('');format('|')), 
+                                          Indent is Level*2,
+                                          indent(Indent),
+                                          print_formatted_world(World,Level),
+                                          print_worlds(OtherWorlds,Level),!.
+
+indent(0).
+indent(Times) :- write('_'),NewTimes is Times-1,indent(NewTimes).
+
+print_formatted_world(world(traceOut(_,vmState(IP,_,_,_,VmFlags)),ChildWorlds),Level) :- format('~w~w~n',[IP,VmFlags]),
+                                                                                         NextLevel is Level+1,
+                                                                                         print_worlds(ChildWorlds,NextLevel).
 
 shouldTerminateWorld(flags(_,hlt(true),_)).
 shouldSplitWorld(flags(_,hlt(false),branch(true))).
