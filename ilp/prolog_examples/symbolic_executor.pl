@@ -224,16 +224,45 @@ error(FormatString,Args) :- log_with_level('ERROR',FormatString,Args).
 dont_log(_).
 dont_log(_,_).
 
-vm(Program,traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags))) :- 
-                                                      instruction_pointer_map(Program,[],const(0),IPMap),
-                                                      label_map(Program,[],const(0),LabelMap),
-                                                      info('IP MAP IS ~w',[IPMap]),
-                                                      info('LABEL MAP IS ~w',[LabelMap]),
-                                                      StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
-                                                      exec_(vmMaps(IPMap,LabelMap),
-                                                          StateIn,[],
-                                                          traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
-                                                          env(log(debug,info,warning,error))).
+execute_symbolic(Program,ExecutionTree) :- instruction_pointer_map(Program,[],const(0),IPMap),
+                              label_map(Program,[],const(0),LabelMap),
+                              info('IP MAP IS ~w',[IPMap]),
+                              info('LABEL MAP IS ~w',[LabelMap]),
+                              StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
+                              explore(Program,StateIn,vmMaps(IPMap,LabelMap),[const(0)],[],AllWorlds).
+
+explore(_,_,VmMaps,[],WorldAcc,WorldAcc) :- 
+explore(Program,VmState,VmMaps,[IP|OtherIPs],WorldAcc,[WorldOut|OtherWorldOuts]) :- 
+                                                    VmState=vmState(_,Stack,CallStack,Registers,flags(ZeroFlag,_,_)),
+                                                    FreshState=vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(false),branch(false))),
+                                                    vm(Program,FreshState,VmMaps,WorldOut),
+                                                    explore(Program,VmState,VmMaps,OtherIPs,WorldAcc,OtherWorldOuts).
+vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(TraceOut,ChildWorlds)) :- 
+                              instruction_pointer_map(Program,[],const(0),IPMap),
+                              label_map(Program,[],const(0),LabelMap),
+                              info('IP MAP IS ~w',[IPMap]),
+                              info('LABEL MAP IS ~w',[LabelMap]),
+                              StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
+                              exec_(vmMaps(IPMap,LabelMap),
+                                  StateIn,[],
+                                  traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
+                                  env(log(debug,info,warning,error))),
+%                                                      FinalVmFlags=..flags(ZeroFlag,hlt(HltFlagValue),branch(BranchFlagValue)),
+                              TraceOut=traceOut(FinalTrace,VmStateOut),
+                              VmStateOut=..vmState(FinalIP,_,_,_,_),
+                              NewStartIP_One=FinalIP,
+                              minusOne(FinalIP,OriginalJumpInstructionIP),
+                              branchDestination(OriginalJumpInstructionIP,LabelMap,IPMap,NewStartIP_Two),
+                              Branches=[NewStartIP_One,NewStartIP_Two],
+                              explore(Program,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds),
+                              info("Branches are: ~w",[Branches]).
+
+branchDestination(FinalIP,LabelMap,IPMap,NewStartIP) :- get2(FinalIP,IPMap,Instr),info("Final Instr is ~w",[Instr]),destination(Instr,LabelMap,NewStartIP).
+
+destination(jz(label(LabelName)),LabelMap,IPOut) :- get2(label(LabelName),LabelMap,IPOut).
+destination(jnz(label(LabelName)),LabelMap,IPOut) :- get2(label(LabelName),LabelMap,IPOut).
+destination(jz(const(JumpIP)),_,const(JumpIP)).
+destination(jnz(const(JumpIP)),_,const(JumpIP)).
 
 eval(const(ConstValue),_,const(ConstValue)).
 eval(sym(inc(Symbol)),Bindings,inc(Evaluated)) :- eval(Symbol,Bindings,Evaluated),Evaluated\=empty.
