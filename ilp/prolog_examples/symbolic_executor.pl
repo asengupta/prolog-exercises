@@ -224,41 +224,37 @@ error(FormatString,Args) :- log_with_level('ERROR',FormatString,Args).
 dont_log(_).
 dont_log(_,_).
 
-execute_symbolic(Program,ExecutionTree) :- instruction_pointer_map(Program,[],const(0),IPMap),
-                              label_map(Program,[],const(0),LabelMap),
-                              info('IP MAP IS ~w',[IPMap]),
-                              info('LABEL MAP IS ~w',[LabelMap]),
-                              StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
-                              explore(Program,StateIn,vmMaps(IPMap,LabelMap),[const(0)],[],AllWorlds).
+execute_symbolic(Program,AllWorlds) :- instruction_pointer_map(Program,[],const(0),IPMap),
+                                       label_map(Program,[],const(0),LabelMap),
+                                       info('IP MAP IS ~w',[IPMap]),
+                                       info('LABEL MAP IS ~w',[LabelMap]),
+                                       StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
+                                       explore(Program,StateIn,vmMaps(IPMap,LabelMap),[const(0)],[],AllWorlds).
 
-explore(_,_,VmMaps,[],WorldAcc,WorldAcc) :- 
+explore(_,_,_,[],WorldAcc,WorldAcc).
 explore(Program,VmState,VmMaps,[IP|OtherIPs],WorldAcc,[WorldOut|OtherWorldOuts]) :- 
                                                     VmState=vmState(_,Stack,CallStack,Registers,flags(ZeroFlag,_,_)),
                                                     FreshState=vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(false),branch(false))),
                                                     vm(Program,FreshState,VmMaps,WorldOut),
                                                     explore(Program,VmState,VmMaps,OtherIPs,WorldAcc,OtherWorldOuts).
 vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(TraceOut,ChildWorlds)) :- 
-                              instruction_pointer_map(Program,[],const(0),IPMap),
-                              label_map(Program,[],const(0),LabelMap),
-                              info('IP MAP IS ~w',[IPMap]),
-                              info('LABEL MAP IS ~w',[LabelMap]),
-                              StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
+%                              StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
                               exec_(vmMaps(IPMap,LabelMap),
                                   StateIn,[],
-                                  traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
+                                  traceOut(FinalTrace,VmStateOut),
                                   env(log(debug,info,warning,error))),
-%                                                      FinalVmFlags=..flags(ZeroFlag,hlt(HltFlagValue),branch(BranchFlagValue)),
                               TraceOut=traceOut(FinalTrace,VmStateOut),
-                              (shouldTerminateWorld(FinalVmFlags)->ChildWorlds=[];
+                              info("LOLOLOL 1: ~w",[VmStateOut]),
+                              VmStateOut=vmState(FinalIP,_,_,_,FinalVmFlags),
+                              info("LOLOLOL 2"),
+                              (shouldTerminateWorld(FinalVmFlags)->(ChildWorlds=[]);
                                 (
-                                  FinalVmFlags=..flags(ZeroFlag,HltFlag,BranchFlag),
-                                  VmStateOut=..vmState(FinalIP,_,_,_,_),
                                   NewStartIP_One=FinalIP,
                                   minusOne(FinalIP,OriginalJumpInstructionIP),
                                   branchDestination(OriginalJumpInstructionIP,LabelMap,IPMap,NewStartIP_Two),
                                   Branches=[NewStartIP_One,NewStartIP_Two],
-                                  info("Branches are: ~w",[Branches])
-                                  explore(Program,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds),
+                                  info("Branches are: ~w",[Branches]),
+                                  explore(Program,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds)
                                 )
                               ).
 

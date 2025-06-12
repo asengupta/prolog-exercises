@@ -82,3 +82,17 @@ vm([
     ret
 ],
 FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
+
+
+execute_symbolic([
+        mvc(reg(f),sym(a)), 
+        label("LOOP"), 
+        term("Looping"),
+        cmp(reg(f),const(5)),
+        jz(label(myjmp)),
+        hlt,
+        label(myjmp),
+        term("In myjmp"),
+        hlt
+        ],
+AllWorlds).
