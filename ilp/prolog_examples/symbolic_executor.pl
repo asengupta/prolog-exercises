@@ -54,7 +54,7 @@ toTraceOut(Trace,VmState,traceOut(Trace,VmState)).
 exec_(_,vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag)),
                   TraceAcc,
                   traceOut(TraceAcc,vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag))),
-                  env(log(_,Info,_,_))) :- call(Info,"EXITING PROGRAM LOOP!!!").
+                  env(log(_,Info,_,_))) :- call(Info,'EXITING PROGRAM LOOP!!!').
 
 exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut,Env) :- 
                                                     get2(IP,IPMap,Instr),
@@ -148,14 +148,14 @@ interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStac
                 call(Debug,'LHS is ~w,~w',[LHSRegister,LHSValue]),
                 call(Debug,'RHS is ~w,~w',[RHSRegister,RHSValue]),
                 product(LHSValue,RHSValue,Product),
-                call(Debug,"And result is ~w",[Product]),
+                call(Debug,'And result is ~w',[Product]),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 interpret(mul(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
                 get2(LHSRegister,Registers,LHSValue),
                 call(Debug,'LHS is ~w',[LHSRegister]),
                 call(Debug,'RHS is ~w',[const(ConstValue)]),
                 product(LHSValue,const(ConstValue),Product),
-                call(Debug,"And result is ~w",[Product]),
+                call(Debug,'And result is ~w',[Product]),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
 interpret(mul(reg(LHSRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
@@ -163,7 +163,7 @@ interpret(mul(reg(LHSRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Reg
                 call(Debug,'LHS is ~w',[LHSRegister]),
                 call(Debug,'RHS is ~w',[sym(Symbol)]),
                 product(LHSValue,sym(Symbol),Product),
-                call(Debug,"And result is ~w",[Product]),
+                call(Debug,'And result is ~w',[Product]),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
 interpret(term(String),_,VmState,VmState,env(log(_,Info,_,_))) :- call(Info,String).
