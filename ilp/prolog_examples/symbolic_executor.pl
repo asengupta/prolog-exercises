@@ -73,7 +73,11 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
                                                         call(Debug,'Interpreting ~w and StateIn is ~w', [Instr, vmState(IP,Stack,CallStack,Registers,VmFlags)]),
                                                         plusOne(IP,NextIP),
                                                         interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),env(log(Debug,Info,Warning,Error))),
-                                                        (shouldBranch(UpdatedVmFlags)->FinalTrace=TraceAcc;
+                                                        (shouldBranch(UpdatedVmFlags)->
+                                                            (
+                                                                terminateForBranch(vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
+                                                                FinalTrace=TraceAcc
+                                                            );
                                                             (
                                                                 call(Debug,'Next IP is ~w',[UpdatedIP]),
                                                                 exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error))),
@@ -82,6 +86,7 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
                                                         ),
                                                         !.
 
+terminateForBranch(VmState,VmState).
 shouldBranch(flags(_,_,branch(true))).
 
 isZero(const(0)).
@@ -142,8 +147,8 @@ interpret(jnz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStac
                                                         get2(label(Label),LabelMap,JumpIP),
                                                         interpret(jnz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error))).
 
-interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedVmFlags,UpdatedIP).
-interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedVmFlags,UpdatedIP).
+interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_symbolic_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedVmFlags,UpdatedIP).
+interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_symbolic_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedVmFlags,UpdatedIP).
 
 interpret(jz(_),_,VmState,VmState,_).
 interpret(jnz(_),_,VmState,VmState,_).
@@ -219,7 +224,7 @@ error(FormatString,Args) :- log_with_level('ERROR',FormatString,Args).
 dont_log(_).
 dont_log(_,_).
 
-vm(Program,FinalTrace,FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags) :- 
+vm(Program,traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags))) :- 
                                                       instruction_pointer_map(Program,[],const(0),IPMap),
                                                       label_map(Program,[],const(0),LabelMap),
                                                       info('IP MAP IS ~w',[IPMap]),
