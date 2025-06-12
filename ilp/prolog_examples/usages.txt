@@ -96,3 +96,16 @@ execute_symbolic([
         hlt
         ],
 AllWorlds).
+
+execute_symbolic([
+  mvc(reg(r1),sym(a)), 
+  mvc(reg(r2),sym(b)), 
+  cmp(reg(r1), const(0)), 
+  jnz(const(5)),          
+  cmp(reg(r2), const(1)), 
+  jz(const(7)),          
+  mvc(reg(r3), const(10)),
+  mvc(reg(r3), const(20)),
+  hlt
+],
+AllWorlds),print_worlds(AllWorlds,0).
