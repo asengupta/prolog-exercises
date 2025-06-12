@@ -92,8 +92,9 @@ product(sym(LHS),sym(RHS),sym(product(sym(LHS),sym(RHS)))).
 product(sym(LHS),const(RHS),sym(product(sym(LHS),const(RHS)))).
 product(const(LHS),sym(RHS),sym(product(const(LHS),sym(RHS)))).
 
-interpret_condition(_,NewIP,flags(zero(ZeroFlagValue),_,_),Condition,NewIP) :- call(Condition,ZeroFlagValue).
-interpret_condition(OldIP,_,flags(zero(ZeroFlagValue),_,_),Condition,OldIP) :- \+ call(Condition,ZeroFlagValue).
+interpret_symbolic_condition(OldNextIP,_,flags(ZeroFlag,HltFlag,_),_,flags(ZeroFlag,HltFlag,branch(true)),OldNextIP).
+interpret_condition(_,NewIP,flags(zero(ZeroFlagValue),HltFlag,_),Condition,flags(zero(ZeroFlagValue),HltFlag,branch(true)),NewIP) :- call(Condition,ZeroFlagValue).
+interpret_condition(OldIP,_,flags(zero(ZeroFlagValue),HltFlag,_),Condition,flags(zero(ZeroFlagValue),HltFlag,branch(true)),OldIP) :- \+ call(Condition,ZeroFlagValue).
 
 interpret(mvc(reg(ToRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
                                                         call(Debug,'In mvc sym: ~w and Registers are: ~w', [ToRegister,Registers]),
@@ -135,8 +136,8 @@ interpret(jnz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStac
                                                         get2(label(Label),LabelMap,JumpIP),
                                                         interpret(jnz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error))).
 
-interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags),_) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedIP).
-interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags),_) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedIP).
+interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedVmFlags,UpdatedIP).
+interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedVmFlags,UpdatedIP).
 
 interpret(jz(_),_,VmState,VmState,_).
 interpret(jnz(_),_,VmState,VmState,_).
