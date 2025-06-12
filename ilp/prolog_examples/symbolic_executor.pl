@@ -249,13 +249,21 @@ vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(TraceOut,ChildWorlds)) :-
                                   env(log(debug,info,warning,error))),
 %                                                      FinalVmFlags=..flags(ZeroFlag,hlt(HltFlagValue),branch(BranchFlagValue)),
                               TraceOut=traceOut(FinalTrace,VmStateOut),
-                              VmStateOut=..vmState(FinalIP,_,_,_,_),
-                              NewStartIP_One=FinalIP,
-                              minusOne(FinalIP,OriginalJumpInstructionIP),
-                              branchDestination(OriginalJumpInstructionIP,LabelMap,IPMap,NewStartIP_Two),
-                              Branches=[NewStartIP_One,NewStartIP_Two],
-                              explore(Program,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds),
-                              info("Branches are: ~w",[Branches]).
+                              (shouldTerminateWorld(FinalVmFlags)->ChildWorlds=[];
+                                (
+                                  FinalVmFlags=..flags(ZeroFlag,HltFlag,BranchFlag),
+                                  VmStateOut=..vmState(FinalIP,_,_,_,_),
+                                  NewStartIP_One=FinalIP,
+                                  minusOne(FinalIP,OriginalJumpInstructionIP),
+                                  branchDestination(OriginalJumpInstructionIP,LabelMap,IPMap,NewStartIP_Two),
+                                  Branches=[NewStartIP_One,NewStartIP_Two],
+                                  info("Branches are: ~w",[Branches])
+                                  explore(Program,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds),
+                                )
+                              ).
+
+shouldTerminateWorld(flags(_,hlt(true),_)).
+shouldSplitWorld(flags(_,hlt(false),branch(true))).
 
 branchDestination(FinalIP,LabelMap,IPMap,NewStartIP) :- get2(FinalIP,IPMap,Instr),info("Final Instr is ~w",[Instr]),destination(Instr,LabelMap,NewStartIP).
 
