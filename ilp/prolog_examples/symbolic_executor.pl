@@ -267,7 +267,7 @@ print_worlds([World|OtherWorlds],Level) :-
 indent(0).
 indent(Times) :- write(' '),NewTimes is Times-1,indent(NewTimes).
 
-print_formatted_world(world(vmState(StartIP,_,_,_,_),traceOut(_,vmState(EndIP,_,_,_,VmFlags)),ChildWorlds),Level) :- format('~w-~w~w~n',[StartIP,EndIP,VmFlags]),
+print_formatted_world(world(vmState(StartIP,_,_,_,_),traceOut(_,vmState(EndIP,_,_,_,VmFlags)),ChildWorlds),Level) :- format('~w-~w,~w~n',[StartIP,EndIP,VmFlags]),
                                                                                                                   NextLevel is Level+1,
                                                                                                                   print_worlds(ChildWorlds,NextLevel).
 
