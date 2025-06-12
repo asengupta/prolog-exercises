@@ -73,10 +73,16 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
                                                         call(Debug,'Interpreting ~w and StateIn is ~w', [Instr, vmState(IP,Stack,CallStack,Registers,VmFlags)]),
                                                         plusOne(IP,NextIP),
                                                         interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),env(log(Debug,Info,Warning,Error))),
-                                                        call(Debug,'Next IP is ~w',[UpdatedIP]),
-                                                        exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error))),
-                                                        FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace],
+                                                        (shouldBranch(UpdatedVmFlags)->FinalTrace=TraceAcc;
+                                                            (
+                                                                call(Debug,'Next IP is ~w',[UpdatedIP]),
+                                                                exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error))),
+                                                                FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace]
+                                                            )
+                                                        ),
                                                         !.
+
+shouldBranch(flags(_,_,branch(true))).
 
 isZero(const(0)).
 isNotZero(X) :- \+ isZero(X).
@@ -93,8 +99,8 @@ product(sym(LHS),const(RHS),sym(product(sym(LHS),const(RHS)))).
 product(const(LHS),sym(RHS),sym(product(const(LHS),sym(RHS)))).
 
 interpret_symbolic_condition(OldNextIP,_,flags(ZeroFlag,HltFlag,_),_,flags(ZeroFlag,HltFlag,branch(true)),OldNextIP).
-interpret_condition(_,NewIP,flags(zero(ZeroFlagValue),HltFlag,_),Condition,flags(zero(ZeroFlagValue),HltFlag,branch(true)),NewIP) :- call(Condition,ZeroFlagValue).
-interpret_condition(OldIP,_,flags(zero(ZeroFlagValue),HltFlag,_),Condition,flags(zero(ZeroFlagValue),HltFlag,branch(true)),OldIP) :- \+ call(Condition,ZeroFlagValue).
+interpret_condition(_,NewIP,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),Condition,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),NewIP) :- call(Condition,ZeroFlagValue).
+interpret_condition(OldIP,_,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),Condition,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),OldIP) :- \+ call(Condition,ZeroFlagValue).
 
 interpret(mvc(reg(ToRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
                                                         call(Debug,'In mvc sym: ~w and Registers are: ~w', [ToRegister,Registers]),
