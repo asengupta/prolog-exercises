@@ -81,10 +81,11 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
 isZero(const(0)).
 isNotZero(X) :- \+ isZero(X).
 
-plusOne(sym(X),inc(sym(X))).
+plusOne(sym(X),sym(inc(sym(X)))).
 plusOne(const(X),const(PlusOne)) :- PlusOne is X+1.
 
-minusOne(sym(X),dec(sym(X))).
+minusOne(sym(X),sym(dec(sym(X)))).
+minusOne(const(X),const(MinusOne)) :- MinusOne is X-1.
 
 product(const(LHS),const(RHS),const(Product)) :- Product is LHS*RHS.
 product(sym(LHS),sym(RHS),sym(product(sym(LHS),sym(RHS)))).
@@ -140,8 +141,8 @@ interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmS
 interpret(jz(_),_,VmState,VmState,_).
 interpret(jnz(_),_,VmState,VmState,_).
 
-interpret(inc(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),_) :- interpret_update_reg(reg(Register),plusOne,Registers,UpdatedRegisters).
-interpret(dec(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),_) :- interpret_update_reg(reg(Register),minusOne,Registers,UpdatedRegisters).
+interpret(inc(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),Env) :- interpret_update_reg(reg(Register),plusOne,Registers,UpdatedRegisters,Env).
+interpret(dec(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),Env) :- interpret_update_reg(reg(Register),minusOne,Registers,UpdatedRegisters,Env).
 interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
                 get2(LHSRegister,Registers,LHSValue),
                 get2(RHSRegister,Registers,RHSValue),
@@ -189,8 +190,11 @@ interpret(nop,_,VmState,VmState,_).
 interpret(hlt,_,vmState(NextIP,Stack,CallStack,Registers,flags(ZeroFlag,_,BranchFlag)),vmState(NextIP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag)),env(log(Debug,_,_,_))) :-
         call(Debug,'Called HLT').
 
-interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters) :- 
-                                                            call(Calculation,sym(reg(Register)),Result),
+interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters,env(log(Debug,_,_,_))) :- 
+                                                            get2(Register,Registers,RegisterValue),
+                                                            call(Debug,"Will decrement ~w",[RegisterValue]),
+                                                            call(Calculation,RegisterValue,Result),
+                                                            call(Debug,"Result is ~w",[Result]),
                                                             update_reg(-(reg(Register),Result),Registers,UpdatedRegisters).
 
 debug(Message) :- log_with_level('DEBUG',Message,[]).

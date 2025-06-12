@@ -28,7 +28,7 @@ test(incremental_symbolic_state) :-
     assertion(R2==const(4)).
 
 test(vm_factorial_of_5_is_120) :-
-        factorial_program(Program),
+       factorial_program(Program),
        vm(Program,_,_,_,_,FinalRegs,_),
        get2(r1,FinalRegs,R1),
        assertion(R1==const(120)).
