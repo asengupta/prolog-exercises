@@ -54,7 +54,7 @@ toTraceOut(Trace,VmState,traceOut(Trace,VmState)).
 exec_(_,vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag)),
                   TraceAcc,
                   traceOut(TraceAcc,vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag))),
-                  env(log(_,Info,_,_))) :- call(Info,'EXITING PROGRAM LOOP!!!').
+                  env(log(_,Info,_,_),_)) :- call(Info,'EXITING PROGRAM LOOP!!!').
 
 exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,StateOut,Env) :- 
                                                     get2(IP,IPMap,Instr),
@@ -64,15 +64,15 @@ exec_(vmMaps(IPMap,LabelMap),vmState(IP,Stack,CallStack,Registers,VmFlags),Trace
 exec_helper(empty,VmMaps,vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,_,BranchFlag)),
                     TraceAcc,
                     traceOut(TraceAcc,ExitState),
-                    env(log(Debug,Info,Warn,Error))) :- 
+                    env(log(Debug,Info,Warn,Error),ExecutionMode)) :- 
                             ExitState=vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag)),
                             call(Warn,'No other instruction found, but no HLT is present. Halting program.'),
-                            exec_(VmMaps,ExitState,TraceAcc,traceOut(TraceAcc,ExitState),env(log(Debug,Info,Warn,Error))).
+                            exec_(VmMaps,ExitState,TraceAcc,traceOut(TraceAcc,ExitState),env(log(Debug,Info,Warn,Error),ExecutionMode)).
 
-exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error))) :-
+exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,traceOut(FinalTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error),ExecutionMode)) :-
                                                         call(Debug,'Interpreting ~w and StateIn is ~w', [Instr, vmState(IP,Stack,CallStack,Registers,VmFlags)]),
                                                         plusOne(IP,NextIP),
-                                                        interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),env(log(Debug,Info,Warning,Error))),
+                                                        interpret(Instr,VmMaps,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),env(log(Debug,Info,Warning,Error),ExecutionMode)),
                                                         (shouldBranch(UpdatedVmFlags)->
                                                             (
                                                                 terminateForBranch(vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
@@ -80,7 +80,7 @@ exec_helper(Instr,VmMaps,vmState(IP,Stack,CallStack,Registers,VmFlags),TraceAcc,
                                                             );
                                                             (
                                                                 call(Debug,'Next IP is ~w',[UpdatedIP]),
-                                                                exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error))),
+                                                                exec_(VmMaps,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags),TraceAcc,traceOut(RemainingTrace,vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),env(log(Debug,Info,Warning,Error),ExecutionMode)),
                                                                 FinalTrace=[traceEntry(Instr,vmState(UpdatedIP,UpdatedStack,UpdatedCallStack,UpdatedRegisters,UpdatedVmFlags))|RemainingTrace]
                                                             )
                                                         ),
@@ -107,23 +107,23 @@ interpret_symbolic_condition(OldNextIP,_,flags(ZeroFlag,HltFlag,_),_,flags(ZeroF
 interpret_condition(_,NewIP,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),Condition,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),NewIP) :- call(Condition,ZeroFlagValue).
 interpret_condition(OldIP,_,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),Condition,flags(zero(ZeroFlagValue),HltFlag,BranchFlag),OldIP) :- \+ call(Condition,ZeroFlagValue).
 
-interpret(mvc(reg(ToRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
+interpret(mvc(reg(ToRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_),_)) :- 
                                                         call(Debug,'In mvc sym: ~w and Registers are: ~w', [ToRegister,Registers]),
                                                         update_reg(-(reg(ToRegister),sym(Symbol)),Registers,UpdatedRegisters).
-interpret(mvc(reg(ToRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
+interpret(mvc(reg(ToRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_),_)) :- 
                                                         call(Debug,'In mvc const: ~w and Registers are: ~w', [ToRegister,Registers]),
                                                         update_reg(-(reg(ToRegister),const(ConstValue)),Registers,UpdatedRegisters).
-interpret(mvc(reg(ToRegister),reg(FromRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
+interpret(mvc(reg(ToRegister),reg(FromRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_),_)) :- 
                                                         call(Debug,'In mvc reg: ~w and Registers are: ~w',[ToRegister,Registers]),
                                                         get2(FromRegister,Registers,FromValue),
                                                         update_reg(-(reg(ToRegister),FromValue),Registers,UpdatedRegisters).
-interpret(cmp(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,flags(_,HltFlag,BranchFlag)),StateOut,env(log(Debug,_,_,_))) :- 
+interpret(cmp(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,flags(_,HltFlag,BranchFlag)),StateOut,env(log(Debug,_,_,_),_)) :- 
                                                         call(Debug,'In cmp(reg,const): ~w and Registers are: ~w',[LHSRegister,Registers]),
                                                         get2(LHSRegister,Registers,LHSValue),
                                                         equate(LHSValue,const(ConstValue),ComparisonResult),
                                                         UpdatedVmFlags=flags(zero(ComparisonResult),HltFlag,BranchFlag),
                                                         StateOut=vmState(NextIP,Stack,CallStack,Registers,UpdatedVmFlags).
-interpret(cmp(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,flags(_,HltFlag,BranchFlag)),StateOut,env(log(Debug,_,_,_))) :- 
+interpret(cmp(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,flags(_,HltFlag,BranchFlag)),StateOut,env(log(Debug,_,_,_),_)) :- 
                                                         call(Debug,'In cmp(reg,reg): ~w,~w and Registers are: ~w',[LHSRegister,RHSRegister,Registers]),
                                                         get2(LHSRegister,Registers,LHSValue),
                                                         get2(RHSRegister,Registers,RHSValue),
@@ -131,31 +131,34 @@ interpret(cmp(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStac
                                                         UpdatedVmFlags=flags(zero(ComparisonResult),HltFlag,BranchFlag),
                                                         StateOut=vmState(NextIP,Stack,CallStack,Registers,UpdatedVmFlags).
 
-interpret(j(label(Label)),vmMaps(_,LabelMap),vmState(_,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags),env(log(Debug,_,_,_))) :- 
+interpret(j(label(Label)),vmMaps(_,LabelMap),vmState(_,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,VmFlags),env(log(Debug,_,_,_),_)) :- 
                                                         call(Debug,'In jmp direct label: ~w and Registers are: ~w',[Label,Registers]),
                                                         get2(label(Label),LabelMap,UpdatedIP).
 
-interpret(j(JumpIP),_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(JumpIP,Stack,CallStack,Registers,VmFlags),env(log(Debug,_,_,_))) :- call(Debug,'In jmp direct',[JumpIP,Registers]).
+interpret(j(JumpIP),_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(JumpIP,Stack,CallStack,Registers,VmFlags),env(log(Debug,_,_,_),_)) :- call(Debug,'In jmp direct',[JumpIP,Registers]).
 
-interpret(jz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error))) :- 
+interpret(jz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error),ExecutionMode)) :- 
                                                         call(Debug,'In JZ label: ~w and Registers are: ~w',[Label,Registers]),
                                                         get2(label(Label),LabelMap,JumpIP),
-                                                        interpret(jz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error))).
+                                                        interpret(jz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error),ExecutionMode)).
 
-interpret(jnz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error))) :- 
+interpret(jnz(label(Label)),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error),ExecutionMode)) :- 
                                                         call(Debug,'In JNZ label: ~w and Registers are: ~w',[Label,Registers]),
                                                         get2(label(Label),LabelMap,JumpIP),
-                                                        interpret(jnz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error))).
+                                                        interpret(jnz(JumpIP),vmMaps(IPMap,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),StateOut,env(log(Debug,Info,Warning,Error),ExecutionMode)).
 
-interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_symbolic_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedVmFlags,UpdatedIP).
-interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),_) :- interpret_symbolic_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedVmFlags,UpdatedIP).
+interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),env(_,mode(symbolic))) :- interpret_symbolic_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedVmFlags,UpdatedIP).
+interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),env(_,mode(symbolic))) :- interpret_symbolic_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedVmFlags,UpdatedIP).
+
+interpret(jz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),env(_,mode(concrete))) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isZero,UpdatedVmFlags,UpdatedIP).
+interpret(jnz(JumpIP),_,vmState(OldNextIP,Stack,CallStack,Registers,VmFlags),vmState(UpdatedIP,Stack,CallStack,Registers,UpdatedVmFlags),env(_,mode(concrete))) :- interpret_condition(OldNextIP,JumpIP,VmFlags,isNotZero,UpdatedVmFlags,UpdatedIP).
 
 interpret(jz(_),_,VmState,VmState,_).
 interpret(jnz(_),_,VmState,VmState,_).
 
 interpret(inc(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),Env) :- interpret_update_reg(reg(Register),plusOne,Registers,UpdatedRegisters,Env).
 interpret(dec(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),Env) :- interpret_update_reg(reg(Register),minusOne,Registers,UpdatedRegisters,Env).
-interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
+interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_),_)) :- 
                 get2(LHSRegister,Registers,LHSValue),
                 get2(RHSRegister,Registers,RHSValue),
                 call(Debug,'LHS is ~w,~w',[LHSRegister,LHSValue]),
@@ -163,7 +166,7 @@ interpret(mul(reg(LHSRegister),reg(RHSRegister)),_,vmState(NextIP,Stack,CallStac
                 product(LHSValue,RHSValue,Product),
                 call(Debug,'And result is ~w',[Product]),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
-interpret(mul(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
+interpret(mul(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_),_)) :- 
                 get2(LHSRegister,Registers,LHSValue),
                 call(Debug,'LHS is ~w',[LHSRegister]),
                 call(Debug,'RHS is ~w',[const(ConstValue)]),
@@ -171,7 +174,7 @@ interpret(mul(reg(LHSRegister),const(ConstValue)),_,vmState(NextIP,Stack,CallSta
                 call(Debug,'And result is ~w',[Product]),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
-interpret(mul(reg(LHSRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_))) :- 
+interpret(mul(reg(LHSRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,Stack,CallStack,UpdatedRegisters,VmFlags),env(log(Debug,_,_,_),_)) :- 
                 get2(LHSRegister,Registers,LHSValue),
                 call(Debug,'LHS is ~w',[LHSRegister]),
                 call(Debug,'RHS is ~w',[sym(Symbol)]),
@@ -179,8 +182,8 @@ interpret(mul(reg(LHSRegister),sym(Symbol)),_,vmState(NextIP,Stack,CallStack,Reg
                 call(Debug,'And result is ~w',[Product]),
                 update_reg(-(reg(LHSRegister),Product),Registers,UpdatedRegisters).
 
-interpret(term(String),_,VmState,VmState,env(log(_,Info,_,_))) :- call(Info,String).
-interpret(label(String),_,VmState,VmState,env(log(_,Info,_,_))) :- call(Info,'ENTER: ~w',[String]).
+interpret(term(String),_,VmState,VmState,env(log(_,Info,_,_),_)) :- call(Info,String).
+interpret(label(String),_,VmState,VmState,env(log(_,Info,_,_),_)) :- call(Info,'ENTER: ~w',[String]).
 
 interpret(push(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,UpdatedStack,CallStack,Registers,VmFlags),_) :- 
                     get2(Register,Registers,RegisterValue),
@@ -191,18 +194,18 @@ interpret(pop(reg(Register)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags)
                                                                 update_reg(-(reg(Register),PoppedValue),Registers,UpdatedRegisters).
 interpret(push(const(X)),_,vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(NextIP,UpdatedStack,CallStack,Registers,VmFlags),_) :- push_(const(X),Stack,UpdatedStack).
 
-interpret(call(label(LabelName)),vmMaps(_,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(CallIP,Stack,UpdatedCallStack,Registers,VmFlags),env(log(_,Info,_,_))) :- 
+interpret(call(label(LabelName)),vmMaps(_,LabelMap),vmState(NextIP,Stack,CallStack,Registers,VmFlags),vmState(CallIP,Stack,UpdatedCallStack,Registers,VmFlags),env(log(_,Info,_,_),_)) :- 
                                                             get2(label(LabelName),LabelMap,CallIP),
                                                             push_(NextIP,CallStack,UpdatedCallStack),
                                                             call(Info,'CALL: ~w and Stack is ~w', [LabelName,UpdatedCallStack]).
-interpret(ret,_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(PoppedValue,Stack,UpdatedCallStack,Registers,VmFlags),env(log(_,Info,_,_))) :- 
+interpret(ret,_,vmState(_,Stack,CallStack,Registers,VmFlags),vmState(PoppedValue,Stack,UpdatedCallStack,Registers,VmFlags),env(log(_,Info,_,_),_)) :- 
                                                             pop_(CallStack,PoppedValue,UpdatedCallStack),
                                                             call(Info,'EXIT...Return IP is ~w',[PoppedValue]).
 interpret(nop,_,VmState,VmState,_).
-interpret(hlt,_,vmState(NextIP,Stack,CallStack,Registers,flags(ZeroFlag,_,BranchFlag)),vmState(NextIP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag)),env(log(Debug,_,_,_))) :-
+interpret(hlt,_,vmState(NextIP,Stack,CallStack,Registers,flags(ZeroFlag,_,BranchFlag)),vmState(NextIP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(true),BranchFlag)),env(log(Debug,_,_,_),_)) :-
         call(Debug,'Called HLT').
 
-interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters,env(log(Debug,_,_,_))) :- 
+interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters,env(log(Debug,_,_,_),_)) :- 
                                                             get2(Register,Registers,RegisterValue),
                                                             call(Debug,"Will decrement ~w",[RegisterValue]),
                                                             call(Calculation,RegisterValue,Result),
@@ -224,25 +227,25 @@ error(FormatString,Args) :- log_with_level('ERROR',FormatString,Args).
 dont_log(_).
 dont_log(_,_).
 
-execute_symbolic(Program,AllWorlds) :- instruction_pointer_map(Program,[],const(0),IPMap),
+execute_symbolic(Program,ExecutionMode,AllWorlds) :- instruction_pointer_map(Program,[],const(0),IPMap),
                                        label_map(Program,[],const(0),LabelMap),
                                        info('IP MAP IS ~w',[IPMap]),
                                        info('LABEL MAP IS ~w',[LabelMap]),
                                        StateIn=vmState(const(0),[],[],[],flags(zero(0),hlt(false),branch(false))),
-                                       explore(Program,StateIn,vmMaps(IPMap,LabelMap),[const(0)],[],AllWorlds).
+                                       explore(Program,ExecutionMode,StateIn,vmMaps(IPMap,LabelMap),[const(0)],[],AllWorlds).
 
-explore(_,_,_,[],WorldAcc,WorldAcc).
-explore(Program,VmState,VmMaps,[IP|OtherIPs],WorldAcc,[WorldOut|OtherWorldOuts]) :- 
+explore(_,_,_,_,[],WorldAcc,WorldAcc).
+explore(Program,ExecutionMode,VmState,VmMaps,[IP|OtherIPs],WorldAcc,[WorldOut|OtherWorldOuts]) :- 
                                                     VmState=vmState(_,Stack,CallStack,Registers,flags(ZeroFlag,_,_)),
                                                     FreshState=vmState(IP,Stack,CallStack,Registers,flags(ZeroFlag,hlt(false),branch(false))),
-                                                    vm(Program,FreshState,VmMaps,WorldOut),
-                                                    explore(Program,VmState,VmMaps,OtherIPs,WorldAcc,OtherWorldOuts),
+                                                    vm(Program,ExecutionMode,FreshState,VmMaps,WorldOut),
+                                                    explore(Program,ExecutionMode,VmState,VmMaps,OtherIPs,WorldAcc,OtherWorldOuts),
                                                     !.
-vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(StateIn,TraceOut,ChildWorlds)) :- 
+vm(Program,ExecutionMode,StateIn,vmMaps(IPMap,LabelMap),world(StateIn,TraceOut,ChildWorlds)) :- 
                               exec_(vmMaps(IPMap,LabelMap),
                                   StateIn,[],
                                   traceOut(FinalTrace,VmStateOut),
-                                  env(log(debug,info,warning,error))),
+                                  env(log(debug,info,warning,error),ExecutionMode)),
                               VmStateOut=vmState(FinalIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags),
                               minusOne(FinalIP,LastInstrIP),
                               TraceOut=traceOut(FinalTrace,vmState(LastInstrIP,FinalStack,FinalCallStack,FinalRegisters,FinalVmFlags)),
@@ -252,7 +255,7 @@ vm(Program,StateIn,vmMaps(IPMap,LabelMap),world(StateIn,TraceOut,ChildWorlds)) :
                                   branchDestination(LastInstrIP,LabelMap,IPMap,NewStartIP_Two),
                                   Branches=[NewStartIP_One,NewStartIP_Two],
                                   info("Branches are: ~w",[Branches]),
-                                  explore(Program,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds)
+                                  explore(Program,ExecutionMode,VmStateOut,vmMaps(IPMap,LabelMap),Branches,[],ChildWorlds)
                                 )
                               ).
 

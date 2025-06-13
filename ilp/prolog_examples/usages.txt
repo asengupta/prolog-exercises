@@ -111,3 +111,26 @@ execute_symbolic([
   hlt
 ],
 AllWorlds),print_worlds(AllWorlds,0).
+
+execute_symbolic([
+     mvc(reg(r0),const(5)),
+     mvc(reg(r1),const(1)),
+     call(label(factorial)),
+     push(const(30)),
+     cmp(reg(r1),const(121)),
+     hlt,
+     label(factorial),
+     cmp(reg(r0),const(0)),
+     jz(label(base)),
+     push(reg(r0)),
+     dec(reg(r0)),
+     call(label(factorial)),
+     pop(reg(r0)),
+     mul(reg(r1),reg(r0)),
+     ret,
+
+     label(base),
+     mvc(reg(r1),const(1)),
+     ret
+],
+AllWorlds),print_worlds(AllWorlds,0).
