@@ -207,7 +207,7 @@ interpret(hlt,_,vmState(NextIP,Stack,CallStack,Registers,flags(ZeroFlag,_,Branch
 
 interpret_update_reg(reg(Register),Calculation,Registers,UpdatedRegisters,env(log(Debug,_,_,_),_)) :- 
                                                             get2(Register,Registers,RegisterValue),
-                                                            call(Debug,"Will decrement ~w",[RegisterValue]),
+                                                            call(Debug,"Will increment/decrement ~w",[RegisterValue]),
                                                             call(Calculation,RegisterValue,Result),
                                                             call(Debug,"Result is ~w",[Result]),
                                                             update_reg(-(reg(Register),Result),Registers,UpdatedRegisters).

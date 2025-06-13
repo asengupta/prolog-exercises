@@ -134,3 +134,18 @@ execute_symbolic([
      ret
 ],
 AllWorlds),print_worlds(AllWorlds,0).
+
+execute_symbolic([
+  mvc(reg(r1),const(10)),inc(reg(r1)),
+  mvc(reg(r2),const(20)),
+  cmp(reg(r1), const(0)),
+  jnz(const(7)),
+  cmp(reg(r2), const(1)),
+  mvc(reg(r1),const(30)),
+  jz(const(10)),
+  mvc(reg(r3), const(40)),
+  hlt,
+  mvc(reg(r3), const(50)),
+  hlt
+],
+mode(symbolic),AllWorlds),print_worlds(AllWorlds,0).
