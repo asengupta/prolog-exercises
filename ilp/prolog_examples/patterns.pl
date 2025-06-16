@@ -7,8 +7,6 @@ contains(Segment,Result) :- concat(_,Segment,Result).
 contains(Segment,Result) :- concat(_,Rest,Result),
                             concat(Segment,_,Rest).
 
-%match(Left,Right,Code) :- concat(_,Right,Intermed),concat(Left,Intermed,Code),!.
-
 prefix2(Prefix,List) :- concat(Prefix,_, List).
 suffix2(Suffix,List) :- concat(_,Suffix, List).
 infix(Infix,List) :- concat(_,Rest,List),
