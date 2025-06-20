@@ -7,4 +7,107 @@ edge("n2","n3").
 reachable(N1,N2) :- edge(N1,N2).
 reachable(N1,N2) :- edge(N1,NX),reachable(NX,N2).
 
-.output reachable
+.type Gender=symbol
+.decl parent(x:symbol, y:symbol)
+.decl gender(x:symbol, g:Gender)
+.decl mother(x:symbol, y:symbol)
+.decl sibling(x:symbol, y:symbol)
+
+mother(x,y) :- parent(x,y),gender(x,"female").
+sibling(x,y) :- parent(z,x), parent(z,y), x!= y.
+
+parent("A","C").
+parent("B","C").
+parent("B","D").
+gender("A","female").
+gender("B","male").
+
+.output mother
+.output sibling
+
+.type Person=[name:symbol,gender:symbol,birthYear:number]
+.decl person(p:Person)
+.decl born_before(p1:Person, p2:Person)
+born_before(p1,p2) :- person(p1), person(p2), p1=[_,_,birthYear1], p2=[_,_,birthYear2], birthYear1 < birthYear2.
+
+person(["A","female",1982]).
+person(["B","female",1983]).
+
+.output born_before
+
+.type Expr = Const{val: number}
+            | Var{name: symbol}
+            | Add {lhs: Expr, rhs: Expr}
+.decl expr(e:Expr)
+.decl uses_var(e:Expr, v:symbol)
+.decl related_to(parent:Expr, child:Expr)
+.decl var_count(e: Expr, n: number)
+.decl var_relation(parent: Expr, child: Expr)
+.decl is_const_expr(e:Expr)
+.decl is_const_expr2(e:Expr)
+.decl is_deep_const_expr(e: Expr)
+.decl const_val(e:Expr, val:number, id:number)
+.decl const_sum(e:Expr, val:number)
+.decl grouped_by_constant(e: Expr, val: number)
+.decl grouped_by_same_constant(e:Expr, constant:number, occurrence:number)
+.decl has_dup_constants(e:Expr)
+.decl has_at_least_two_constants(e:Expr, num_unique_constant:number)
+.decl mixed_use(e: Expr)
+
+expr($Const(5)).
+expr($Var("x")).
+expr($Add($Const(10), $Const(10))).
+expr($Add($Var("y"), $Const(20))).
+expr($Add($Add($Const(1), $Var("a")), $Const(3))).
+expr($Add($Add($Const(1), $Const(2)), $Const(3))).
+
+related_to(parent,child) :- expr(parent), parent=$Add(child,_).
+related_to(parent,child) :- expr(parent), parent=$Add(_,child).
+related_to(parent,child) :- related_to(parent,mid), mid=$Add(child,_).
+related_to(parent,child) :- related_to(parent,mid), mid=$Add(_,child).
+
+uses_var(e,v) :- expr(e), e=$Var(v).
+uses_var(e,v) :- related_to(e,x), x=$Var(v).
+
+var_relation(p,c) :- related_to(p,c),c=$Var(_).
+var_count(e,1) :- expr(e), e=$Var(_).
+var_count(e,count: {var_relation(e,_)}) :- expr(e), e=$Add(_,_).
+
+is_const_expr(e) :- expr(e), e=$Const(_).
+is_const_expr(e) :- expr(e), e=$Add(_,_), !var_relation(e,_).
+
+is_deep_const_expr(e) :- related_to(_,e), e=$Const(_).
+is_deep_const_expr(e) :- related_to(_,e), e=$Add(lhs,rhs), is_deep_const_expr(lhs), is_deep_const_expr(rhs).
+
+is_const_expr2(e) :- expr(e), e=$Const(_).
+is_const_expr2(e) :- expr(e), e=$Add(lhs,rhs), is_deep_const_expr(lhs), is_deep_const_expr(rhs).
+
+const_val(e,c,autoinc()) :- expr(e), e=$Const(c).
+const_val(e,c,autoinc()) :- expr(e), related_to(e,x), x=$Const(c).
+
+const_sum(e,v) :- expr(e), e=$Const(v).
+const_sum(e,sum c: {const_val(e,c,_)}) :- expr(e).
+
+grouped_by_constant(e,1) :- expr(e), e=$Const(_).
+grouped_by_constant(e,0) :- expr(e), e=$Var(_).
+grouped_by_constant(e,count:{const_val(e,_,_)}) :- expr(e), const_val(e,_,_).
+// Doesnt work because cannot distinguish structurally similar subtrees LOL
+grouped_by_same_constant(e,c,1) :- expr(e), e=$Const(c).
+grouped_by_same_constant(e,c,count:{const_val(e,c,_)}) :- expr(e), const_val(e,c,_).
+
+has_at_least_two_constants(e,uniq_constants) :- expr(e), grouped_by_constant(e,uniq_constants), uniq_constants > 1.
+has_dup_constants(e) :- expr(e), grouped_by_same_constant(e,_,occurrences), occurrences > 1.
+
+mixed_use(e) :- expr(e), uses_var(e,_), const_val(e,_,_).
+
+.output uses_var
+.output var_count
+.output is_const_expr
+.output is_const_expr2
+.output const_val
+.output const_sum
+.output grouped_by_constant
+.output has_at_least_two_constants
+.output mixed_use
+.output grouped_by_same_constant
+.output has_dup_constants
