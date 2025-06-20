@@ -1,0 +1,10 @@
+.decl edge(n1:symbol,n2:symbol)
+.decl reachable(n1:symbol,n2:symbol)
+
+edge("n1","n2").
+edge("n2","n3").
+
+reachable(N1,N2) :- edge(N1,N2).
+reachable(N1,N2) :- edge(N1,NX),reachable(NX,N2).
+
+.output reachable
