@@ -53,13 +53,17 @@ person(["B","female",1983]).
 .decl has_dup_constants(e:Expr)
 .decl has_at_least_two_constants(e:Expr, num_unique_constant:number)
 .decl mixed_use(e: Expr)
+.decl is_deep_const_add(subexpr:Expr)
+.decl const_add(root:Expr)
+.decl deep_adds_zero(root:Expr)
+.decl adds_zero(root:Expr)
 
-expr($Const(5)).
-expr($Var("x")).
-expr($Add($Const(10), $Const(10))).
-expr($Add($Var("y"), $Const(20))).
-expr($Add($Add($Const(1), $Var("a")), $Const(3))).
-expr($Add($Add($Const(1), $Const(2)), $Const(3))).
+expr($Add($Var("x"), $Const(0))).                                     // trivial useless add
+expr($Add($Const(0), $Var("y"))).                                     // trivial useless add
+expr($Add($Add($Const(0), $Var("z")), $Const(3))).                    // useless add in left subtree
+expr($Add($Const(5), $Const(3))).                                     // no useless add
+expr($Add($Var("x"), $Add($Var("y"), $Const(0)))).                    // nested useless add
+expr($Add($Add($Const(1), $Const(2)), $Add($Const(0), $Const(4)))).   // right child is a useless add
 
 related_to(parent,child) :- expr(parent), parent=$Add(child,_).
 related_to(parent,child) :- expr(parent), parent=$Add(_,child).
@@ -100,6 +104,14 @@ has_dup_constants(e) :- expr(e), grouped_by_same_constant(e,_,occurrences), occu
 
 mixed_use(e) :- expr(e), uses_var(e,_), const_val(e,_,_).
 
+is_deep_const_add(subexpr) :- related_to(_,subexpr), subexpr=$Add(lhs,rhs), (is_deep_const_add(lhs);is_deep_const_expr(lhs)),
+                                                        (is_deep_const_add(rhs);is_deep_const_expr(rhs)).
+const_add(root) :- expr(root), root=$Add(lhs,rhs), (is_deep_const_add(lhs);is_deep_const_expr(lhs)),
+                                                                  (is_deep_const_add(rhs);is_deep_const_expr(rhs)).
+
+deep_adds_zero(expr) :- related_to(_,expr), expr=$Add(lhs,rhs), (lhs=$Const(0);rhs=$Const(0);deep_adds_zero(lhs);deep_adds_zero(rhs)).
+adds_zero(root) :- expr(root), root=$Add(lhs,rhs), (lhs=$Const(0);rhs=$Const(0);deep_adds_zero(lhs);deep_adds_zero(rhs)).
+
 .output uses_var
 .output var_count
 .output is_const_expr
@@ -111,3 +123,5 @@ mixed_use(e) :- expr(e), uses_var(e,_), const_val(e,_,_).
 .output mixed_use
 .output grouped_by_same_constant
 .output has_dup_constants
+.output const_add
+.output adds_zero
