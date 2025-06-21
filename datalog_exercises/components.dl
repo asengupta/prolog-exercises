@@ -1,0 +1,60 @@
+.comp Reachability {
+    .decl reachable(x:number, y:number)
+    .decl edge(x:number, y:number)
+
+    reachable(x,y) :- edge(x,y).
+    reachable(x,y) :- edge(x,z), reachable(z,y).
+}
+
+.init R=Reachability
+
+R.edge(1,2).
+R.edge(2,3).
+R.edge(3,4).
+R.edge(3,5).
+R.edge(1,6).
+
+.comp SymmetricClosure<T> {
+    .decl R(x:T,y:T)
+    .decl S(x:T,y:T)
+
+    S(x,y) :- R(x,y).
+    S(y,x) :- S(x,y).
+}
+//.decl reachable(x:number, y:number)
+//.decl edge(x:number, y:number)
+
+.init S=SymmetricClosure<symbol>
+
+S.R("1a","2b").
+S.R("5c","8d").
+
+.output R.reachable
+.output S.S
+
+.decl person(p:symbol)
+.decl loner(p:symbol)
+.decl friend(x:symbol, y:symbol)
+.decl socialite(p:symbol)
+.decl outgoing_friends(p:symbol, n:number)
+
+loner(p) :- person(p), !friend(p,_), !friend(_,p).
+outgoing_friends(p, count: {friend(p,_)}) :- person(p).
+socialite(p) :- person(p), outgoing_friends(p,n), n>=2.
+
+person("A").
+person("B").
+person("C").
+person("D").
+person("E").
+person("F").
+
+friend("A", "B").
+friend("A", "C").
+friend("A", "D").
+friend("C", "D").
+friend("D", "E").
+
+.output socialite
+.output loner
+.output outgoing_friends

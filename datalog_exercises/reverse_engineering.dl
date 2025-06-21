@@ -1,0 +1,52 @@
+.type Node=symbol
+.decl node(n: Node)
+.decl edge(from: Node, to: Node)
+.decl is_only_next(from: Node, to: Node)
+.decl outgoing(n: Node, edge_count: number)
+.decl incoming(n: Node, edge_count: number)
+.decl straightline_reachable(from: Node, to: Node)
+.decl basic_block(from: Node, to: Node)
+.decl is_junction(n: Node)
+
+node("A").
+node("B").
+node("C").
+node("D").
+node("E").
+node("E1").
+node("E2").
+node("F").
+
+edge("A", "B").
+edge("B", "C").
+edge("B", "D").
+edge("C", "E").
+edge("E", "E1").
+edge("E1", "E2").
+edge("E2", "F").
+edge("D", "F").
+
+outgoing(n, count : { edge(n, _) }) :- node(n).
+incoming(n, count : { edge(_, n) }) :- node(n).
+
+is_only_next(from, to) :- edge(from, to),
+                          incoming(to, incomingAtTarget), incomingAtTarget = 1,
+                          outgoing(from, outgoingAtSource), outgoingAtSource = 1.
+
+is_junction(n) :- (incoming(n, incoming), incoming > 1);
+                  (outgoing(n, outgoing), outgoing > 1).
+
+straightline_reachable(x, y) :- is_only_next(x, y).
+straightline_reachable(x, y) :- is_only_next(x, z),
+                                straightline_reachable(z, y).
+
+basic_block(x, x) :- ((edge(j1, x), is_junction(j1)); (incoming(x, incoming_edges), incoming_edges=0)),
+                     ((edge(x, j2), is_junction(j2)); (outgoing(x, outgoing_edges), outgoing_edges=0)).
+basic_block(x, y) :- edge(j1, x), is_junction(j1),
+                     edge(y, j2), is_junction(j2),
+                     straightline_reachable(x, y).
+.output outgoing
+.output incoming
+.output straightline_reachable
+.output basic_block
+.output is_junction
