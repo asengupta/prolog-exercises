@@ -1,12 +1,20 @@
 .type Node=symbol
 .decl node(n: Node)
+.decl is_root(n: Node)
 .decl edge(from: Node, to: Node)
 .decl is_only_next(from: Node, to: Node)
 .decl outgoing(n: Node, edge_count: number)
 .decl incoming(n: Node, edge_count: number)
+.decl reachable(from: Node, to: Node)
 .decl straightline_reachable(from: Node, to: Node)
 .decl basic_block(from: Node, to: Node)
 .decl is_junction(n: Node)
+.decl is_conditional_jump(n: Node)
+.decl is_multiple_entry(n: Node)
+.decl loop(from: Node, to: Node)
+.decl not_dom(dominator: Node, dominated: Node)
+//.decl dominates(dominator: Node, dominated: Node)
+.decl loop2(from: Node, to: Node)
 
 node("A").
 node("B").
@@ -26,6 +34,21 @@ edge("E1", "E2").
 edge("E2", "F").
 edge("D", "F").
 
+node("loop_0").
+node("loop_1").
+node("loop_2").
+node("loop_3").
+node("loop_4").
+node("loop_5").
+is_root("loop_0").
+
+edge("loop_0", "loop_1").
+edge("loop_1", "loop_2").
+edge("loop_2", "loop_3").
+edge("loop_3", "loop_4").
+edge("loop_4", "loop_1").
+edge("loop_4", "loop_5").
+
 outgoing(n, count : { edge(n, _) }) :- node(n).
 incoming(n, count : { edge(_, n) }) :- node(n).
 
@@ -36,6 +59,12 @@ is_only_next(from, to) :- edge(from, to),
 is_junction(n) :- (incoming(n, incoming), incoming > 1);
                   (outgoing(n, outgoing), outgoing > 1).
 
+is_conditional_jump(n) :- (outgoing(n, outgoing), outgoing > 1).
+is_multiple_entry(n) :- (incoming(n, incoming), incoming > 1).
+
+reachable(x, y) :- edge(x, y).
+reachable(x, y) :- edge(x, z), reachable(z, y).
+
 straightline_reachable(x, y) :- is_only_next(x, y).
 straightline_reachable(x, y) :- is_only_next(x, z),
                                 straightline_reachable(z, y).
@@ -45,8 +74,21 @@ basic_block(x, x) :- ((edge(j1, x), is_junction(j1)); (incoming(x, incoming_edge
 basic_block(x, y) :- edge(j1, x), is_junction(j1),
                      edge(y, j2), is_junction(j2),
                      straightline_reachable(x, y).
+
+loop(x, y) :- is_multiple_entry(x), is_conditional_jump(y), reachable(x, y), reachable(y, x).
+not_dom(dominator, dominated) :- node(dominator), is_root(dominated), dominated != dominator.
+not_dom(dominator, dominated) :- edge(pred, dominated), not_dom(dominator, pred), dominated != dominator.
+loop2(h, b) :- edge(b, h), !not_dom(h, b).
+
 .output outgoing
 .output incoming
 .output straightline_reachable
 .output basic_block
 .output is_junction
+.output reachable
+.output loop
+//.output dominates
+.output loop2
+.output not_dom
+
+// Read: https://www.xiaowenhu.com/posts/dominance_tree/
