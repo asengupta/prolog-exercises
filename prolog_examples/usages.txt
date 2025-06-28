@@ -1,10 +1,10 @@
 vm([
-        mvc(reg(f), const(5)), 
-        label("LOOP"), 
-        term("Looping"), 
-        dec(reg(f)), 
-        cmp(reg(f),const(0)), 
-        jnz(label("LOOP")), 
+        mvc(reg(f), const(5)),
+        label("LOOP"),
+        term("Looping"),
+        dec(reg(f)),
+        cmp(reg(f),const(0)),
+        jnz(label("LOOP")),
         j(label("SOME_LABEL")),
         term("-------------------------Done"),
         label("SOME_LABEL"),
@@ -85,8 +85,8 @@ FinalTrace, FinalIP, FinalStack, FinalCallStack, FinalRegs, Flag).
 
 
 execute_symbolic([
-        mvc(reg(f),sym(a)), 
-        label("LOOP"), 
+        mvc(reg(f),sym(a)),
+        label("LOOP"),
         term("Looping"),
         cmp(reg(f),const(5)),
         jz(label(myjmp)),
@@ -98,13 +98,13 @@ execute_symbolic([
 AllWorlds).
 
 execute_symbolic([
-  mvc(reg(r1),sym(a)), 
-  mvc(reg(r2),sym(b)), 
-  cmp(reg(r1), const(0)), 
-  jnz(const(6)),          
-  cmp(reg(r2), const(1)), 
+  mvc(reg(r1),sym(a)),
+  mvc(reg(r2),sym(b)),
+  cmp(reg(r1), const(0)),
+  jnz(const(6)),
+  cmp(reg(r2), const(1)),
   mvc(reg(r1),sym(c)),
-  jz(const(9)),          
+  jz(const(9)),
   mvc(reg(r3), sym(d)),
   hlt,
   mvc(reg(r3), const(20)),
@@ -136,16 +136,16 @@ execute_symbolic([
 AllWorlds),print_worlds(AllWorlds,0).
 
 execute_symbolic([
-  mvc(reg(r1),const(10)),inc(reg(r1)),
-  mvc(reg(r2),const(20)),
-  cmp(reg(r1), const(0)),
-  jnz(const(7)),
-  cmp(reg(r2), const(1)),
-  mvc(reg(r1),const(30)),
-  jz(const(10)),
-  mvc(reg(r3), const(40)),
-  hlt,
-  mvc(reg(r3), const(50)),
-  hlt
+    mov(reg(r1),const(10)),inc(reg(r1)),
+    mov(reg(r2),const(20)),
+    cmp(reg(r1), const(0)),
+    jnz(const(7)),
+    cmp(reg(r2), const(1)),
+    mov(reg(r1),const(30)),
+    jz(const(10)),
+    mov(reg(r3), const(40)),
+    hlt,
+    mov(reg(r3), const(50)),
+    hlt
 ],
 mode(symbolic),AllWorlds),print_worlds(AllWorlds,0).

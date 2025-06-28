@@ -44,3 +44,49 @@ call_if_defined(C) :- predicateExists(C),groundPredicate(C),call(C).
 foo(a, b).
 bar(a, _).
 
+node(a).
+node(b).
+node(c).
+node(d).
+node(e).
+node(f).
+
+edge(a,b).
+edge(b,c).
+edge(b,d).
+edge(c,e).
+edge(d,e).
+
+a_exists :- node(a).
+node_exists(N) :- node(N).
+has_multiple_outgoing_edges(N) :- edge(N,A), edge(N,B), A \= B, !.
+is_unconnected(N) :- \+ edge(N,_).
+
+can_reach(From, To) :- edge(From, To), !.
+can_reach(From, To) :- edge(From, Z), can_reach(Z, To).
+
+printall([]).
+printall([H|T]) :- writeln(H), printall(T).
+
+reverse2([],Acc,Acc).
+reverse2([H|T],Acc,Result) :- reverse2(T,[H|Acc],Result),!.
+
+%recognise_letters(some_fn(a)) :-
+%    writeln('a was first parameter'), !.
+%recognise_letters(some_fn(b)) :-
+%    writeln('b was first parameter'), !.
+%recognise_letters(some_fn(_)) :-
+%    writeln('Something other than a or b').
+recognise_letters(some_fn(a)) :- writeln('a was first parameter'),!.
+recognise_letters(some_fn(b)) :- writeln('b was first parameter'),!.
+recognise_letters(some_fn(_)) :- writeln('Something other than a or b').
+
+print_mapped_number(Number,Pred) :- call(Pred, Number, Result),format('Result is: ~w', Result).
+add_one(Number, Result) :- Result is Number+1.
+
+print_person((FirstName, LastName),Age,(AddressLine1, AddressLine2)) :- format('First name:~w, Last name: ~w, Age: ~w, AddressLine1: ~w, AddressLne2: ~w', [FirstName, LastName, Age, AddressLine1, AddressLine2]).
+
+concat([],RHS,RHS) :- !.
+concat([H|T],Acc,[H|R]) :- concat(T,Acc,R).
+
+join_3(Prefix, Middle, Suffix, Result) :- concat(Prefix,RHS,Result), concat(Middle,Suffix,RHS).
