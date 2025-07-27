@@ -95,3 +95,4 @@ loop2(h, b) :- edge(b, h), !not_dom(h, b).
 .output not_dom
 
 // Read: https://www.xiaowenhu.com/posts/dominance_tree/
+
