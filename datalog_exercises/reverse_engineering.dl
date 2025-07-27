@@ -80,8 +80,8 @@ loop(x, y) :- is_multiple_entry(x), is_conditional_jump(y), reachable(x, y), rea
 not_dom(dominator, dominated) :- node(dominator), is_root(dominated), dominated != dominator.
 not_dom(dominator, dominated) :- is_root(root), reachable(root, dominated),
                                  edge(pred, dominated), not_dom(dominator, pred), dominated != dominator.
-dominates(dominator, dominated) :- not_dom(dominator, dominated).
-loop2(h, b) :- edge(b, h), !not_dom(h, b).
+dominates(dominator, dominated) :- node(dominator), node(dominated), !not_dom(dominator, dominated).
+loop2(h, b) :- edge(b, h), dominates(h, b).
 
 .output outgoing
 .output incoming
